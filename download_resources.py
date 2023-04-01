@@ -6,7 +6,7 @@ import requests
 url = 'https://sourceforge.net/projects/bbmap/files/BBMap_39.01.tar.gz/download'
 response = requests.get(url)
 
-with open('bin/bbmap-v39.01', 'wb') as f:
+with open('bin/bbmap-v39.01.tar.gz', 'wb') as f:
     f.write(response.content)
 
 # Compute the MD5 checksum of the downloaded file
