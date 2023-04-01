@@ -118,4 +118,4 @@ dmypy.json
 
 
 # individual assets
-#/bin
+/bin
