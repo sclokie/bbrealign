@@ -1,46 +1,44 @@
-#!/usr/bin/env python3
-"""
-Module realignbam
-"""
-
-__author__ = "Sam Clokie"
-__version__ = "0.1.0"
-__license__ = "MIT"
-
 import argparse
-from logzero import logger
-
+import sys
+import pysam
+from utilities import filter_sam
 
 def main(args):
-    """ Main entry point of the app """
-    #
-    logger.info("hello world")
-    logger.info(args)
+    input_bam_file = args.input
+    output_bam_file = args.output
+    nm_threshold = args.nm
 
+    # Open input BAM
+    if input_bam_file == '-':
+        input_bam = pysam.AlignmentFile(sys.stdin.buffer, "rb")
+    else:
+        input_bam = pysam.AlignmentFile(input_bam_file, "rb")
+
+    filtered_reads = filter_sam(input_bam, nm_threshold)
+
+    # Write output BAM
+    if output_bam_file == '-':
+        output_bam = pysam.AlignmentFile(sys.stdout.buffer, "wb", header=input_bam.header)
+    else:
+        output_bam = pysam.AlignmentFile(output_bam_file, "wb", header=input_bam.header)
+
+    for read in filtered_reads:
+        output_bam.write(read)
+
+    input_bam.close()
+    output_bam.close()
+
+    if output_bam_file != '-':
+        sorted_bam_file = output_bam_file.replace(".bam", "_sorted.bam")
+        pysam.sort("-o", sorted_bam_file, output_bam_file)
+        pysam.index(sorted_bam_file)
 
 if __name__ == "__main__":
-    """ This is executed when run from the command line """
     parser = argparse.ArgumentParser()
 
-    # Optional argument flag which defaults to False
-    parser.add_argument("-f", "--flag", action="store_true", default=False)
-
-    # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("-n", "--name", action="store", dest="name")
-
-    # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="count",
-        default=0,
-        help="Verbosity (-v, -vv, etc)")
-
-    # Specify output of "--version"
-    parser.add_argument(
-        "--version",
-        action="version",
-        version="%(prog)s (version {version})".format(version=__version__))
+    parser.add_argument("-i", "--input", required=True, help="Input BAM file, use '-' for stdin")
+    parser.add_argument("-o", "--output", required=True, help="Output BAM file, use '-' for stdout")
+    parser.add_argument("-n", "--nm", type=int, default=1, help="NM threshold (default: 1)")
 
     args = parser.parse_args()
     main(args)
