@@ -1,5 +1,7 @@
 import argparse
 import sys
+import os
+import tempfile
 import pysam
 from utilities import filter_sam
 
@@ -16,22 +18,23 @@ def main(args):
 
     filtered_reads = filter_sam(input_bam, nm_threshold)
 
-    # Write output BAM
-    if output_bam_file == '-':
-        output_bam = pysam.AlignmentFile(sys.stdout.buffer, "wb", header=input_bam.header)
-    else:
-        output_bam = pysam.AlignmentFile(output_bam_file, "wb", header=input_bam.header)
+    # Create a temporary file for storing unsorted output BAM
+    with tempfile.NamedTemporaryFile(mode='wb', delete=False) as tmp_file:
+        tmp_output_bam_file = tmp_file.name
 
-    for read in filtered_reads:
-        output_bam.write(read)
+    # Write output BAM
+    with pysam.AlignmentFile(tmp_output_bam_file, "wb", header=input_bam.header) as output_bam:
+        for read in filtered_reads:
+            output_bam.write(read)
 
     input_bam.close()
-    output_bam.close()
 
-    if output_bam_file != '-':
-        sorted_bam_file = output_bam_file.replace(".bam", "_sorted.bam")
-        pysam.sort("-o", sorted_bam_file, output_bam_file)
-        pysam.index(sorted_bam_file)
+    # Sort and index the BAM file
+    pysam.sort("-o", output_bam_file, tmp_output_bam_file)
+    pysam.index(output_bam_file)
+
+    # Clean up the temporary file
+    os.remove(tmp_output_bam_file)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
