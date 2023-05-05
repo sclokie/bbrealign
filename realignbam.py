@@ -9,6 +9,7 @@ def main(args):
     input_bam_file = args.input
     output_bam_file = args.output
     nm_threshold = args.nm
+    temp_dir = args.tempdir
 
     # Open input BAM
     if input_bam_file == '-':
@@ -19,7 +20,7 @@ def main(args):
     filtered_reads = filter_sam(input_bam, nm_threshold)
 
     # Create a temporary file for storing unsorted output BAM
-    with tempfile.NamedTemporaryFile(mode='wb', delete=False) as tmp_file:
+    with tempfile.NamedTemporaryFile(mode='wb', delete=False, dir=temp_dir) as tmp_file:
         tmp_output_bam_file = tmp_file.name
 
     # Write output BAM
@@ -42,6 +43,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--input", required=True, help="Input BAM file, use '-' for stdin")
     parser.add_argument("-o", "--output", required=True, help="Output BAM file, use '-' for stdout")
     parser.add_argument("-n", "--nm", type=int, default=1, help="NM threshold (default: 1)")
+    parser.add_argument("-t", "--tempdir", default=None, help="Temporary directory for storing intermediate files (default: system temporary directory)")
 
     args = parser.parse_args()
     main(args)
