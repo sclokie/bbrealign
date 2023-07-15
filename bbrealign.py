@@ -26,7 +26,36 @@ import pipeline_commands as cmd
 from utilities import filter_sam, update_cigar_distribution, filter_bam_file
 from utilities import summarise_fasta, split_bam_by_deletion_length, merge_and_count_deletions
 
+parser = argparse.ArgumentParser(description='\
+Process bwa2 aligned data to extract interesting reads that could be realigned using bbmap.',
+                                 epilog="Notes:\n\
+The script assumes bams are already split by contig.", \
+                                 formatter_class=RawTextHelpFormatter)
 
+parser.add_argument('-c', '--config', action="store", dest="config_file", \
+                    help=' REQUIRED. A file containing paths of all programs to use,\n CPUs to use etc. This is system specific. [Required]', \
+                    required=True)
+
+parser.add_argument('-n', '--named-directory', action="store", dest="named_directory", \
+                    help=' Required. A name to use for run summary. [Required]', \
+                    required=True)
+
+parser.add_argument('-chemistry', '--chemistry', action="store", dest="chemistry", \
+                    help=' REQUIRED. The capture chemistry used. [Required]', \
+                    required=True)
+
+parser.add_argument('-debug', '--debug', action="store", dest="debug", \
+                    help=' NOT REQUIRED. If set to Y, then large intermediate files will not be zeroed, to save disk space', \
+                    required=False)
+
+args = parser.parse_args()
+
+# Set global dictionaries:
+samplesheetDict = {}
+sampleDict = {}
+config_dict = {}
+# Will want to read pipeline version in from command?
+pipeline_version = '0.1.0'
 
 # Need a way to get the bam files in.
 # This script is intended to be used as part of a typical bioinformatics pipeline - accepting a bam file

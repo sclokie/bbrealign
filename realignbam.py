@@ -5,7 +5,8 @@ import tempfile
 import pysam
 from collections import defaultdict
 from utilities import filter_sam, update_cigar_distribution, filter_bam_file
-# JUly 2023
+
+
 
 def save_cigar_distribution(distribution, filename):
     with open(filename, 'w') as file:
