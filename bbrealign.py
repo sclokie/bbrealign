@@ -54,6 +54,8 @@ args = parser.parse_args()
 samplesheetDict = {}
 sampleDict = {}
 config_dict = {}
+#config_dict['cpu_count'] = 12
+print(config_dict)
 # Will want to read pipeline version in from command?
 pipeline_version = '0.1.0'
 
@@ -66,6 +68,24 @@ pipeline_version = '0.1.0'
 # Requirements:
 # config files of genomic resources - need to get from command line now.
 # bam file input: get from regexsimply state: "just docker run <bbrealign> -args <config_file> in this dir and it'll work"
+
+
+def readConfigFile(config_file):
+    """
+    Read in the config file that lists the locations of genomic resources such as genome.fasta,
+    and indexes for bwa and computational resources available on the host machine
+    """
+    with open(config_file, 'r') as infile:
+        for line in infile:
+            if line.startswith('#') or line.startswith('\n'):
+                pass
+            else:
+                line = line.split('=', 1)
+                config_dict[line[0]] = line[1][:-1]
+
+
+readConfigFile(args.config_file)
+cur_dir = os.getcwd()
 
 @jobs_limit(12)
 @transform(["*.split.bam"],suffix(".split.bam"),".splitreads.bam")
@@ -326,3 +346,5 @@ def extract_split_reads(infile,outfile):
 #
 #     # Save the figure as PNG
 #     plt.savefig(f'{outfile}', format='png')
+
+pipeline_run(multiprocess = int(config_dict['cpu_count']),verbose=1)
