@@ -1,0 +1,176 @@
+
+#Computer specific data
+#Note max limit of 192 simultaneous threads in Women's data centre.
+#debug T or F
+debugmode=T
+#tidyup T or F
+tidyup=F
+
+
+cpu_count=32
+fastp_threads=4
+bwa_threads=8
+bwa2_threads=28
+sambamba_sort_threads=4
+
+# Genome specific data
+
+#abra_genome_fasta needs to be in a different directory (by itself) from the bwa index, because it breaks the abra realigner.
+abra_genome_fasta=/data/genomic-resources/human/gatk_bundle/hs37d5/hs37d5.fa
+bwa_genome_fasta=/mnt/fire/genomes/human/human_g1k_v37_decoy.fasta
+bwa2_genome_fasta=/mnt/fire/genomes/human/bwa2/human_g1k_v37_decoy.fasta
+bwa2_genome_dict=/data/genomic-resources/human/gatk_bundle/hs37d5/bwa-mem2/hs37d5.dict
+bbmap_genome=/mnt/fire/genomes/human/bbmap/human_g1k_v37_decoy_cleaned_header.fasta
+#See: http://lists.ensembl.org/pipermail/dev/2013-February/008502.html for explanatoin of chrY
+#sed 's/chr//' /data/genomic-resources/selected_regions/exomes/RefSeq-15-11-2019.all-longest-isoforms-only-2+2.annotated  | grep -v "[6-7]_" | grep -v "Un_" > /data/genomic-resources/selected_regions/exomes/RefSeq-15-11-2019.all-longest-isoforms-only-2+2.annotated.nochr.bed
+# ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/dbsnp_138.b37.vcf.gz
+dbsnp=/mnt/fire/genomes/human/gatk/build37/dbsnp_138.b37.vcf.gz
+
+#abra_kmers=/data/genomic-resources/human/selected_regions/exomes/UCSC_table_parser/allRefSeq-all-isoforms-reported-5+5.merged.abra.kmers.bed
+#22-05-2019, run this:
+#java -Xmx8G -cp /opt/programs/abra-0.97b-SNAPSHOT-jar-with-dependencies.jar abra.KmerSizeEvaluator 151 /data/process/genomes/human/gatk_bundle/hs37d5_chr/hs37d5_chr.fa  /data/genomic-resources/human/selected_regions/exomes/hg19-ensemble-31-07-2018+-5.merged.primaryAssemblyOnly.nochrs.kmers.bed 12 /data/genomic-resources/human/selected_regions/exomes/hg19-ensemble-31-07-2018+-5.merged.primaryAssemblyOnly.nochrs.bed
+abra_kmers=/data/genomic-resources/human/selected_regions/hg19-ensemble-31-07-2018+-5.merged.primaryAssemblyOnly.nochrs.kmers.bed
+abra_min_edge_pruning=.1
+# Assay and lab specific information:
+
+ROI_ensembl_pad0=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-exons+-0-merged.bed
+#ROI_ensembl_pad5=/data/genomic-resources/human/selected_regions/exomes/hg19-ensemble-31-07-2018+-5.merged.bed
+ROI_ensembl_pad5=/data/genomic-resources/human/selected_regions/exomes/hg19-ensemble-31-07-2018+-5.merged.primaryAssemblyOnly.bed
+ROI_ensembl_pad5_nochrs=/data/genomic-resources/human/selected_regions/exomes/hg19-ensemble-31-07-2018+-5.merged.primaryAssemblyOnly.nochrs.bed
+ROI_ensembl_pad10=/data/genomic-resources/selected_regions/exomes/ensGene-all+-10.mergd.no.chr.no-gl.bed
+ROI_1=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr1.bed
+ROI_2=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr2.bed
+ROI_3=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr3.bed
+ROI_4=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr4.bed
+ROI_5=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr5.bed
+ROI_6=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr6.bed
+ROI_7=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr7.bed
+ROI_8=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr8.bed
+ROI_9=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr9.bed
+ROI_10=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr10.bed
+ROI_11=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr11.bed
+ROI_12=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr12.bed
+ROI_13=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr13.bed
+ROI_14=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr14.bed
+ROI_15=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr15.bed
+ROI_16=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr16.bed
+ROI_17=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr17.bed
+ROI_18=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr18.bed
+ROI_19=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr19.bed
+ROI_20=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr20.bed
+ROI_21=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr21.bed
+ROI_22=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chr22.bed
+ROI_X=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chrX.bed
+ROI_Y=/data/genomic-resources/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chrY.bed
+ROI_MT=/mnt/fire/genomes/human/selected_regions/exomes/ensGene-hg19-04-12-2020-exons+-0-merged-chrMT.bed
+
+#variant_effect_predictor=perl variant_effect_predictor.pl --dir /data/genomic-resources/VEP/
+
+# Assay specific data - target regions etc.
+# These are purposely different from the ROI file and are used to ascertain assay performance metrics
+TSO_manifest=/data/genomic-resources/human/selected_regions/TSO/TruSight-One-BED-May-2014.bed
+picard_header_assay_probes=/data/genomic-resources/human/selected_regions/Agilent_exome/S07604514_Covered-for-picard.txt
+ensembl_2bp=/data/genomic-resources/human/selected_regions/exomes/ensGene-all+-2.merged.bed
+ensembl_5bp=/data/genomic-resources/human/selected_regions/exomes/ensGene-all+-5.merged.bed
+ensembl_10bp=/data/genomic-resources/human/selected_regions/exomes/ensGene-all+-10.merged.bed
+coverage_regions_2=/data/genomic-resources/human/selected_regions/exomes/RefSeq-15-11-2019.all-longest-isoforms-only-2+2.annotated
+
+poly_excel=/network/processed/HiSeq_data/TSO/Poly_info_for_filtering.xlsx
+panel_name=EXOME
+cov1=100
+cov2=200
+cov3=300
+cov4=400
+cov5=500
+cov6=600
+min_depth=100
+poly_list=/network/processed/HiSeq_data/TSO/Poly_info_for_filtering.xlsx
+# Excel creation
+summary_sheet_cols=SAMPLE,GENE,CHROM,POS,HGVS,POLY,DEPTH,Alleles,AB,Check1,Check2,Comments,Manual HGVS,Tier,Seen_in-house_previously,Evidence1,Evidence2,Evidence3,Evidence4,Evidence5
+select_summary_sheet_cols=SAMPLE,GENE,CHROM,POS,HGVS,POLY,DEPTH,Alleles,AB
+#!!!NOTE!!! The 'WM_EXOME' should be different per panel !!!###!!!
+variant_sheet_cols=Worksheet,SAMPLE,Caller,GENE,CHROM,POS,REF,ALT,SVLEN,GT,GQ,FILTER,DEPTH,Alleles,AB,AB-list,Sequence +/-10 of variant,HP,TCF,TCR,IGV,UCSC,FUNC-refGene,EXONIC_FUNC-refGene,HGVS,HGVS-refGene,POLY,WM_EXOME,WM-Details,TG_ALL,TG_AMR,TG_AFR,TG_EAS,TG_EUR,TG_SAS,GNOMAD_ALL,GNOMAD_AFR,GNOMAD_AMR,GNOMAD_ASJ,GNOMAD_EAS,GNOMAD_FIN,GNOMAD_NFE,GNOMAD_OTH,GNOMAD_SAS,SNP153,ESP6500_ALL,gnomAD_link,CLINACC,CLINVAR,COSMIC,SANGER,1KG_spark,gnomAD_spark
+cols_for_cond_formatting=TG_ALL,TG_AMR,TG_AFR,TG_EAS,TG_EUR,TG_SAS,GNOMAD_ALL,GNOMAD_AFR,GNOMAD_AMR,GNOMAD_ASJ,GNOMAD_EAS,GNOMAD_FIN,GNOMAD_NFE,GNOMAD_OTH,GNOMAD_SAS,ESP6500_ALL
+drop_down_required=No
+keywords_for_filtering=Polymorphism,polymorphism,Poly_tract,poly_tract,Polymorphic_tract,polymorphic_tract
+singletons=True
+SRY-coverage=True
+somatic_var_template=Yes
+excel_header_definitions=/network/sequenced/genomic_resources/panels/excel_headers.csv
+keywords_for_filtering=Polymorphism,polymorphism,Polymorphic_tract,polymorphic_tract
+
+#Programs:
+bbmap=/home/sclokie/programs/bbmap/bbmap.sh
+bcl2fastq=/opt/programs/bcl2fastq/cxx/bin/bcl2fastq
+Trimmomatic=/opt/programs/Trimmomatic-0.32/trimmomatic-0.32.jar
+fastp=/opt/programs/fastp-0.20.1/fastp
+
+MarkDuplicates=java -jar /home/sclokie/programs/picard-tools-1.128/picard.jar MarkDuplicates
+java18=/home/sclokie/programs/amazon-corretto-8.292.10.1-linux-x64/bin/java
+picard2=/home/sclokie/programs/picard.jar
+
+#Scripts
+extract_splits=/home/sclokie/PycharmProjects/bbrealign/realignbam.py
+
+CollectAlignmentSummaryMetrics=java -jar /home/sclokie/programs/picard-tools-1.128/picard.jar CollectAlignmentSummaryMetrics
+CalculateHsMetrics=java -jar /home/sclokie/programs/picard-tools-1.128/picard.jar CalculateHsMetrics
+AddOrReplaceReadGroups=java -jar /home/sclokie/programs/picard-tools-1.128/picard.jar AddOrReplaceReadGroups
+HaplotypeCaller=/opt/programs/gatk-4.1.2.0/gatk-package-4.1.2.0-local.jar
+gatk4=/home/sclokie/programs/gatk-4.3.0.0/gatk
+plink=/opt/programs/plink-1.07-x86_64/plink
+king=/opt/programs/king
+vcf_merge=/opt/programs/vcftools_0.1.12b/bin/vcf-merge
+vcftools=/opt/programs/vcftools_0.1.12b/bin/vcftools
+vcf_sort=/opt/programs/vcftools_0.1.12b/perl/vcf-sort
+bgzip=/opt/programs/tabix-0.2.6/bgzip
+tabix=/opt/programs/tabix-0.2.6/tabix
+bwa=/opt/programs/bwa-0.7.17/bwa
+bwa2=/home/sclokie/programs/bwa-mem2-2.2.1_x64-linux/bwa-mem2
+#bwa2=/opt/programs/bwa-mem2-2.2.1_x64-linux/bwa-mem2.sse42
+samtools=/home/sclokie/programs/samtools-1.16.1/samtools
+plotbamstats=/opt/programs/samtools-1.11/misc/plot-bamstats
+samblaster=/home/sclokie/programs/samblaster-v.0.1.26/samblaster
+sambamba=sambamba-0.8.0-linux-amd64-static
+bedtools_intersectBed=/opt/programs/bedtools-v2.29.2/bin/intersectBed
+bcftools=/opt/programs/samtools-bcftools-htslib-1.0_x64-linux/bin/bcftools
+vep=/opt/programs/ensembl-vep-release-102/vep
+vep_genome_fasta=/data/genomic-resources/human/gatk_bundle/hs37d5/hs37d5.fa
+vep_dir=/opt/programs/ensembl-vep-release-102/
+vepdb_version=102
+vepcache_version=102
+vep_cache_dir=/data/genomic-resources/human/vep-related/
+vep_plugins=/data/genomic-resources/human/vep-related/plugins/
+
+funcotator_resources=/zpool/genomic-resources/human/funcotator-resources/funcotator_dataSources.v1.7.20200521g
+
+
+PicardFixMateInformation=java -jar -XX:ParallelGCThreads=1 /opt/programs/picard-tools-1.128/picard.jar FixMateInformation
+picard_mergesam=/opt/programs/picard-tools-1.97/MergeSamFiles.jar
+abraRealignbam=/opt/programs/abra-0.97b-SNAPSHOT-jar-with-dependencies.jar
+###abra2Realignbam=/opt/programs/abra2-2.23.jar
+abra2Realignbam=/home/sclokie/programs/abra2-2.23-jar-with-dependencies.jar
+##abra2Realignbam=/opt/programs/abra2/abra2-2.23/target/abra2-2.23-jar-with-dependencies.jar
+
+
+#CNV calling using gatk 4.2.2
+wgs_1k_intervals=/data/genomic-resources/human/gatk_bundle/hs37d5/bwa-mem2/hs37d5.1kb.targets1-22XY.preprocessed.interval_list
+wgs_annotated_intervals=/data/genomic-resources/human/gatk_bundle/hs37d5/bwa-mem2/hs37d5.1kb.targets1-22XY.preprocessed.annotated.interval_list
+exclude_intervals=/data/genomic-resources/human/gatk_bundle/hs37d5/bwa-mem2/hs37d5.targets_C.preprocessed.interval_list
+segmental_dups=/data/genomic-resources/human/gatk_bundle/hs37d5/bwa-mem2/hg19-segmental-dups-merged.bed
+ploidy_priors=/data/genomic-resources/human/gatk_bundle/hs37d5/bwa-mem2/contig_ploidy_priors.tsv
+
+
+panel_of_normals_gatk4_1to22XY=/wgsdata/process/123/02_alignments/123MC.cnvponC.pon.hdf5
+
+master_variant_database=/data/variants-master.db
+
+
+#XYalign
+xyalign_ref=/data/genomic-resources/human/hs37d5/XYalign/reference
+
+
+
+
+
+
+
