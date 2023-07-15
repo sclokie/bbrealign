@@ -55,7 +55,7 @@ samplesheetDict = {}
 sampleDict = {}
 config_dict = {}
 #config_dict['cpu_count'] = 12
-print(config_dict)
+
 # Will want to read pipeline version in from command?
 pipeline_version = '0.1.0'
 
@@ -86,6 +86,7 @@ def readConfigFile(config_file):
 
 readConfigFile(args.config_file)
 cur_dir = os.getcwd()
+#print(config_dict)
 
 @jobs_limit(12)
 @transform(["*.split.bam"],suffix(".split.bam"),".splitreads.bam")

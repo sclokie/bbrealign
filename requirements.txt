@@ -15,7 +15,6 @@ pooch==1.7.0
 pysam==0.21.0
 python-dateutil==2.8.2
 pytz==2023.3
-PyVCF==0.6.8
 requests==2.31.0
 ruffus==2.8.4
 six==1.16.0

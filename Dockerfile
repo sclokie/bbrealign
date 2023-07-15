@@ -2,6 +2,10 @@ FROM python:3.9
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
+RUN pip install "setuptools<58" --upgrade # A way to circumvent a build bug in pyvcf (https://github.com/KarchinLab/open-cravat/issues/98)
+RUN pip uninstall pyvcf
+RUN pip install pyvcf
 COPY . .
-CMD ["python", "your_script.py"]
-# NEW WORK JULY 2023
+ENTRYPOINT ["python", "bbrealign.py"]
+
+
