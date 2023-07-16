@@ -91,6 +91,7 @@ cur_dir = os.getcwd()
 @jobs_limit(12)
 @transform(["*.split.bam"],suffix(".split.bam"),".splitreads.bam")
 def extract_split_reads(infile,outfile):
+    print(infile,'-->',outfile)
     name = re.sub(".split.bam","",infile)
     os.system(f"sambamba-0.8.0-linux-amd64-static index -t 4 {infile}")
     os.system(cmd.extract_split_reads(\
@@ -99,6 +100,7 @@ def extract_split_reads(infile,outfile):
                                         bam_out = outfile,
                                         cwd = os.getcwd(),
                                         log_name = name))
+
 
 # @follows(extract_split_reads)
 # @subdivide(["*splitreads.bam"],formatter(r".splitreads.bam$"),"{basename[0]}.fastq.gz")
