@@ -87,19 +87,18 @@ def readConfigFile(config_file):
 readConfigFile(args.config_file)
 cur_dir = os.getcwd()
 #print(config_dict)
-
+print("the actual code is running")
 @jobs_limit(12)
-@transform(["*.split.bam"],suffix(".split.bam"),".splitreads.bam")
+@transform(["/data/*.split.bam"],suffix(".split.bam"),".splitreads.bam")
 def extract_split_reads(infile,outfile):
     print(infile,'-->',outfile)
     name = re.sub(".split.bam","",infile)
-    os.system(f"sambamba-0.8.0-linux-amd64-static index -t 4 {infile}")
-    os.system(cmd.extract_split_reads(\
-                                        config_dict = config_dict,
-                                        bam = infile,
-                                        bam_out = outfile,
-                                        cwd = os.getcwd(),
-                                        log_name = name))
+    os.system(f"/app/sambamba-0.8.2-linux-amd64-static index -t 4 {infile}")
+    # Run python script to extract split reads with little filtering
+    os.system(f"python realignbam.py \
+                -i {infile} \
+                -o {outfile} \
+                -t {os.getcwd()}")
 
 
 # @follows(extract_split_reads)
