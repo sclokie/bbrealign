@@ -86,40 +86,61 @@ def readConfigFile(config_file):
 
 readConfigFile(args.config_file)
 cur_dir = os.getcwd()
-#print(config_dict)
-print("the actual code is running")
+
 @jobs_limit(12)
 @transform(["/data/*.split.bam"],suffix(".split.bam"),".splitreads.bam")
 def extract_split_reads(infile,outfile):
+   print(infile,'-->',outfile)
+   name = re.sub(".split.bam","",infile)
+   os.system(f"/app/sambamba-0.8.2-linux-amd64-static index -t 4 {infile}")
+   # Run python script to extract split reads with little filtering:
+   # Edit distance of 1 or more
+   os.system(f"python realignbam.py \
+               -i {infile} \
+               -o {outfile} \
+               -t {os.getcwd()}")
+
+@follows(extract_split_reads)
+@subdivide(["/data/*splitreads.bam"],formatter(r".splitreads.bam$"),"/data/{basename[0]}.fastq.gz")
+def splitreads_to_fastq(infile,outfile):
     print(infile,'-->',outfile)
-    name = re.sub(".split.bam","",infile)
-    os.system(f"/app/sambamba-0.8.2-linux-amd64-static index -t 4 {infile}")
-    # Run python script to extract split reads with little filtering
-    os.system(f"python realignbam.py \
-                -i {infile} \
-                -o {outfile} \
-                -t {os.getcwd()}")
+    cmd = f"samtools fastq -o {outfile} -0 /dev/null {infile}"
+    os.system(cmd)
 
-
-# @follows(extract_split_reads)
-# @subdivide(["*splitreads.bam"],formatter(r".splitreads.bam$"),"{basename[0]}.fastq.gz")
-# def splitreads_to_fastq(infile,outfile):
-#     cmd = f"samtools fastq -o {outfile} -0 /dev/null {infile}"
-#     os.system(cmd)
-#
-# splitreadsregex = "(?P<FILESTRING>.+).splitreads.R[12].fastq.gz$"
-# @jobs_limit(5)
-# @follows(splitreads_to_fastq)
-# @transform("*.splitreads.fastq.gz", suffix(".splitreads.fastq.gz"),".bbmap.bam")
-# def bbmap_split_reads(infile,outfile):
-#     name = re.sub(".bbmap.bam","",outfile)
-#     os.system(cmd.bbmap_default_wgs_single_read(\
-#                                 config_dict = config_dict,
-#                                 worksheet = args.named_directory,
-#                                 chemistry = args.chemistry,
-#                                 FASTQ    = infile,
-#                                 out_primary_bam = outfile,
-#                                 root_name = name))
+splitreadsregex = "(?P<FILESTRING>.+).splitreads.R[12].fastq.gz$"
+@jobs_limit(5)
+@follows(splitreads_to_fastq)
+@transform("/data/*.splitreads.fastq.gz", suffix(".splitreads.fastq.gz"),".bbmap.bam")
+def bbmap_split_reads(infile,outfile):
+    name = re.sub(".bbmap.bam","",outfile)
+    os.system(f"bbmap.sh \
+           -Xmx24g \
+           ref={config_dict['bbmap_genome']} \
+           nodisk=t \
+           rgid={name} \
+           rgpl=illumina \
+           rgsm={name} \
+           in={infile} \
+           out={outfile} \
+           outu={name}.bbmap.unmapped.fastq \
+           unpigz=t \
+           threads=6 \
+           maxindel=1000k \
+           rescuedist=1000000 \
+           usejni=t \
+           rgid={name} \
+           mdtag=t \
+           nhtag=t \
+           xmtag=t \
+           nmtag=t \
+           stoptag=t \
+           lengthtag=t \
+           idtag=t \
+           inserttag=t \
+           scoretag=t \
+           usemodulo=t \
+           statsfile={name}.bbmap.align.stats.log \
+           machineout=t")
 #
 # @jobs_limit(4)
 # @follows(bbmap_split_reads)

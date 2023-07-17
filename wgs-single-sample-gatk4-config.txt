@@ -20,7 +20,7 @@ abra_genome_fasta=/data/genomic-resources/human/gatk_bundle/hs37d5/hs37d5.fa
 bwa_genome_fasta=/mnt/fire/genomes/human/human_g1k_v37_decoy.fasta
 bwa2_genome_fasta=/mnt/fire/genomes/human/bwa2/human_g1k_v37_decoy.fasta
 bwa2_genome_dict=/data/genomic-resources/human/gatk_bundle/hs37d5/bwa-mem2/hs37d5.dict
-bbmap_genome=/mnt/fire/genomes/human/bbmap/human_g1k_v37_decoy_cleaned_header.fasta
+bbmap_genome=/genomes/human_g1k_v37_decoy_cleaned_header.fasta
 #See: http://lists.ensembl.org/pipermail/dev/2013-February/008502.html for explanatoin of chrY
 #sed 's/chr//' /data/genomic-resources/selected_regions/exomes/RefSeq-15-11-2019.all-longest-isoforms-only-2+2.annotated  | grep -v "[6-7]_" | grep -v "Un_" > /data/genomic-resources/selected_regions/exomes/RefSeq-15-11-2019.all-longest-isoforms-only-2+2.annotated.nochr.bed
 # ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/dbsnp_138.b37.vcf.gz
