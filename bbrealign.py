@@ -69,6 +69,7 @@ def readConfigFile(config_file):
                 pass
             else:
                 line = line.split('=', 1)
+
                 config_dict[line[0]] = line[1][:-1]
 
 
@@ -193,44 +194,47 @@ cur_dir = os.getcwd()
 #
 # @follows(filter_bbmap_on_cigar)
 #@transform(["/data/*.merged.bbmap.cigar.filtered.bam"],suffix(".merged.bbmap.cigar.filtered.bam"),".bbmap.roi.bed")
-def calculate_depth(infile,outfile):
-    # create genome file using a custom function that summarises a given fasta on the fly -
+# def calculate_depth(infile,outfile):
+#     # create genome file using a custom function that summarises a given fasta on the fly -
+#     # that is the same one used by bbmap in this case
+#     # Note that for testing I set the lower filter to 1. 5 is better for production.
+#     summarise_fasta(config_dict['bbmap_genome'],
+#                     'genome_sizes_contigs.txt')
+#     os.system('mv genome_sizes_contigs.txt /data/genome_sizes_contigs.txt')
+#      min_depth = int(config_dict['minimum_depth_bbmap_filter'])
+#     cmd = f"bedtools genomecov -bga -ibam {infile} \
+#     | awk '$4 > {min_depth}' \
+#     | bedtools merge -i - \
+#     | bedtools slop -i - -g /data/genome_sizes_contigs.txt -b 300 > {outfile}"
+#     os.system(cmd)
+
+# @follows(calculate_depth)
+# @transform(["/data/*.bbmap.roi.bed"], suffix(".bbmap.roi.bed"), ".bbmap.roi.bam")
+# def filter_bbmap_bam_for_roi(infile, outfile):
+#     # filter bam
+#     bam_name = re.sub(".bbmap.roi.bed",".bbmap.cigar.filtered.bam",infile)
+#     filter_cmd = f"intersectBed -wa -a {bam_name} -b {infile} > {outfile}"
+#     os.system(filter_cmd)
+#
+# @follows(filter_bbmap_bam_for_roi)
+# @transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bbmap.roi.bam.bai")
+# def index_filtered_bbmap(infile,outfile):
+#     print(infile,'-->',outfile)
+#     os.system(f"./sambamba-0.8.2-linux-amd64-static index -t 12 {infile}")
+#
+# @follows(index_filtered_bbmap)
+@transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bbmap_realigned.roi.bed")
+def calculate_depth_for_bbmap_realigned(infile,outfile):
+    #create genome file using a custom function that summarises a given fasta on the fly -
     # that is the same one used by bbmap in this case
-    # Note that for testing I set the lower filter to 1. 5 is better for production.
-    summarise_fasta(config_dict['bbmap_genome'],
-                    'genome_sizes_contigs.txt')
+    summarise_fasta(config_dict['bbmap_genome'],'genome_sizes_contigs.txt')
     os.system('mv genome_sizes_contigs.txt /data/genome_sizes_contigs.txt')
+    min_depth = int(config_dict['minimum_depth_bbmap_filter'])
     cmd = f"bedtools genomecov -bga -ibam {infile} \
-    | awk '$4 > 1' \
+    | awk '$4 > {min_depth}' \
     | bedtools merge -i - \
     | bedtools slop -i - -g /data/genome_sizes_contigs.txt -b 300 > {outfile}"
     os.system(cmd)
-
-# @follows(calculate_depth)
-@transform(["/data/*.bbmap.roi.bed"], suffix(".bbmap.roi.bed"), ".bbmap.roi.bam")
-def filter_bbmap_bam_for_roi(infile, outfile):
-    # filter bam
-    bam_name = re.sub(".bbmap.roi.bed",".bbmap.cigar.filtered.bam",infile)
-    filter_cmd = f"intersectBed -wa -a {bam_name} -b {infile} > {outfile}"
-    os.system(filter_cmd)
-#
-# @follows(filter_bbmap_bam_for_roi)
-# @transform(["*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bbmap.roi.bam.bai")
-# def index_filtered_bbmap(infile,outfile):
-#     print(infile,'-->',outfile)
-#     os.system(cmd.sambamba_index(infile,6))
-#
-# @follows(index_filtered_bbmap)
-# @transform(["*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bbmap_realigned.roi.bed")
-# def calculate_depth_for_bbmap_realigned(infile,outfile):
-#     #create genome file using a custom function that summarises a given fasta on the fly -
-#     # that is the same one used by bbmap in this case
-#     summarise_fasta(config_dict['bbmap_genome'],'genome_sizes.txt')
-#     cmd = f"bedtools genomecov -bga -ibam {infile} \
-#     | awk '$4 > 5' \
-#     | bedtools merge -i - \
-#     | bedtools slop -i - -g genome_sizes.txt -b 300 > {outfile}"
-#     os.system(cmd)
 #
 # @follows(calculate_depth_for_bbmap_realigned)
 # @transform(["*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".annotated.bed")
