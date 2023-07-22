@@ -148,50 +148,47 @@ cur_dir = os.getcwd()
 #          os.system(f"> {infile}")
 
 # @follows(sort_bbmap_bam)
-# @collate("/data/*.bbmap.sorted.bam", formatter("([^/]+).chr([0-9]|[0-9][0-9]|X|Y|MT).bbmap.sorted.bam$"),"{path[0]}/{1[0]}.bbmap.bam")
-# def merge_bbmap(infiles,outfile):
-#     """
-#     Sort the chromosomes in proper order so increase speed.
-#     i.e. the MergeSamFiles will then not have to sort the file.
-#     Note sambamba failed here with a segmentation fault or a 'Read reference ID is out of range' error. Picard works.
-#     """
-#     print(infiles,'-->',outfile,'\n')
-#     log_name   = outfile[:-10]
-#     m_x_y_bams = list(infiles[-3:])           # slice the M, X and Y
-#     cwd = os.getcwd()
-#     m_x_y_bams_sorted = [m_x_y_bams[1],m_x_y_bams[2],m_x_y_bams[0]] # get into order: X,Y,M
-#     split_bams = list(infiles)                # convert ruffus tuple to list
-#     split_bams = (split_bams[:-3])            # remove X and Y for sorting
-#     split_bams.sort(key=lambda x: int(x.split('chr')[1].split('.')[0])) # sort on the chr value within the file name
-#     sorted_bams = split_bams + m_x_y_bams_sorted  # Create the file order for vcf concatenation
-#     bam_files = ' INPUT='.join(sorted_bams)
-#     cmd = f"picard MergeSamFiles \
-#             SO=coordinate \
-#             INPUT={bam_files} \
-#             OUTPUT={outfile} \
-#             VALIDATION_STRINGENCY=LENIENT \
-#             TMP_DIR={cwd} \
-#             CREATE_INDEX=true 2>{log_name}.merge.log"
-#
-#     os.system(cmd)
+@collate("/data/*.bbmap.sorted.bam", formatter("([^/]+).chr([0-9]|[0-9][0-9]|X|Y|MT).bbmap.sorted.bam$"),"{path[0]}/{1[0]}.merged.bbmap.bam")
+def merge_bbmap(infiles,outfile):
+    """
+    Sort the chromosomes in proper order so increase speed.
+    i.e. the MergeSamFiles will then not have to sort the file.
+    Note sambamba failed here with a segmentation fault or a 'Read reference ID is out of range' error. Picard works.
+    """
+    print(infiles,'-->',outfile,'\n')
+    log_name   = outfile[:-10]
+    m_x_y_bams = list(infiles[-3:])           # slice the M, X and Y
+    cwd = os.getcwd()
+    m_x_y_bams_sorted = [m_x_y_bams[1],m_x_y_bams[2],m_x_y_bams[0]] # get into order: X,Y,M
+    split_bams = list(infiles)                # convert ruffus tuple to list
+    split_bams = (split_bams[:-3])            # remove X and Y for sorting
+    split_bams.sort(key=lambda x: int(x.split('chr')[1].split('.')[0])) # sort on the chr value within the file name
+    sorted_bams = split_bams + m_x_y_bams_sorted  # Create the file order for vcf concatenation
+    bam_files = ' INPUT='.join(sorted_bams)
+    cmd = f"picard MergeSamFiles \
+            SO=coordinate \
+            INPUT={bam_files} \
+            OUTPUT={outfile} \
+            VALIDATION_STRINGENCY=LENIENT \
+            TMP_DIR={cwd} \
+            CREATE_INDEX=true 2>{log_name}.merge.log"
+
+    os.system(cmd)
 
 
-# @follows(merge_bbmap)
-# @transform(["/data/*.grch37.bbmap.bam"],suffix(".grch37.bbmap.bam"),".grch37.bbmap.bam.bai")
-# def index_merged_bbmap(infile,outfile):
-#     print(infile,'-->',outfile)
-#     os.system(f"./sambamba-0.8.2-linux-amd64-static index -t 12 {infile}")
-
-# # lines 473-523 (still working on filtering large dels:..) commented out on 28/06/2023
-# ###@transform(["*.bbmap.bam"],suffix(".bbmap.bam"),".bbmap.roi.cigar.filtered.bam")
-# @follows(index_merged_bbmap)
-# @transform(["*.grch37.bbmap.bam"],suffix(".grch37.bbmap.bam"),".grch37.bbmap.cigar.filtered.bam")
-# def filter_bbmap_on_cigar(infile,outfile):
-#     outfile_temp = f"{outfile}.temp"
-#     filter_bam_file(infile,outfile_temp)
-#     os.system(f"samtools sort -o {outfile} {outfile}.temp")
-#     os.system(f"samtools index {outfile}")
-#     os.system(f"rm {outfile_temp}")
+@follows(merge_bbmap)
+@transform(["/data/*.merged.bbmap.bam"],suffix(".merged.bbmap.bam"),".merged.bbmap.bam.bai")
+def index_merged_bbmap(infile,outfile):
+    print(infile,'-->',outfile)
+    os.system(f"./sambamba-0.8.2-linux-amd64-static index -t 12 {infile}")
+@follows(index_merged_bbmap)
+@transform(["/data/*.merged.bbmap.bam"],suffix(".merged.bbmap.bam"),".merged.bbmap.cigar.filtered.bam")
+def filter_bbmap_on_cigar(infile,outfile):
+    outfile_temp = f"{outfile}.temp"
+    filter_bam_file(infile,outfile_temp)
+    os.system(f"samtools sort -o {outfile} {outfile}.temp")
+    os.system(f"samtools index {outfile}")
+    os.system(f"rm {outfile_temp}")
 #
 # @follows(filter_bbmap_on_cigar)
 # @transform(["*.bbmap.cigar.filtered.bam"],suffix(".bbmap.cigar.filtered.bam"),".bbmap.roi.bed")
