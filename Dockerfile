@@ -33,6 +33,7 @@ RUN wget \
 RUN conda --version
 RUN conda install -c bioconda bbmap
 RUN conda install -c bioconda picard
+RUN conda install -c bioconda bedtools
 
 #Set up App
 
