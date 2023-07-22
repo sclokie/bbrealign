@@ -32,6 +32,7 @@ RUN wget \
     && rm -f Miniconda3-latest-Linux-x86_64.sh
 RUN conda --version
 RUN conda install -c bioconda bbmap
+RUN conda install -c bioconda picard
 
 #Set up App
 
