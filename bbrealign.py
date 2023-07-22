@@ -9,6 +9,7 @@ import shutil
 from argparse import RawTextHelpFormatter
 from ruffus import *
 import time
+from Bio import SeqIO
 
 from utilities import filter_sam, update_cigar_distribution, filter_bam_file
 from utilities import summarise_fasta, split_bam_by_deletion_length, merge_and_count_deletions
@@ -191,17 +192,21 @@ cur_dir = os.getcwd()
 #     os.system(f"rm {outfile_temp}")
 #
 # @follows(filter_bbmap_on_cigar)
-@transform(["/data/*.merged.bbmap.cigar.filtered.bam"],suffix(".merged.bbmap.cigar.filtered.bam"),".bbmap.roi.bed")
+#@transform(["/data/*.merged.bbmap.cigar.filtered.bam"],suffix(".merged.bbmap.cigar.filtered.bam"),".bbmap.roi.bed")
 def calculate_depth(infile,outfile):
     # create genome file using a custom function that summarises a given fasta on the fly -
     # that is the same one used by bbmap in this case
+    # Note that for testing I set the lower filter to 1. 5 is better for production.
+    print("Determine contig sizes for bedtools.")
+
     summarise_fasta(config_dict['bbmap_genome'],
-                    'genome_contig_sizes.txt')
+                    'genome_sizes_contigs.txt')
+    os.system('mv genome_sizes_contigs.txt /data/genome_sizes_contigs.txt')
     cmd = f"bedtools genomecov -bga -ibam {infile} \
-    | awk '$4 > 5' \
+    | awk '$4 > 1' \
     | bedtools merge -i - \
-    | bedtools slop -i - -g genome_contig_sizes.txt -b 300 > {outfile}"
-    print(cmd)
+    | bedtools slop -i - -g /data/genome_sizes_contigs.txt -b 300 > {outfile}"
+    os.system(cmd)
 #
 # @follows(calculate_depth)
 # @transform(["*.bbmap.roi.bed"], suffix(".bbmap.roi.bed"), ".bbmap.roi.bam")

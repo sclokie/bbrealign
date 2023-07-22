@@ -201,9 +201,6 @@ def summarise_fasta(fasta_file, output_file):
             sequence_length = len(record.seq)
             out.write(f"{sequence_name}\t{sequence_length}\n")
 
-
-
-
 def update_cigar_distribution(cigar_distribution, cigar_string):
     if cigar_string in cigar_distribution:
         cigar_distribution[cigar_string] += 1
