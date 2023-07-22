@@ -1,27 +1,14 @@
 
 import argparse
-import shutil
-import glob
 from glob import glob
 import sys
 import os
-#from sqlalchemy import create_engine
 import os.path
 import re
 import shutil
 from argparse import RawTextHelpFormatter
-import subprocess
-import shelve
-from collections import defaultdict
-import csv
-import pysam
-import tempfile
-from io import StringIO
-import io
 from ruffus import *
 import time
-#import vcf
-import pipeline_commands as cmd
 
 from utilities import filter_sam, update_cigar_distribution, filter_bam_file
 from utilities import summarise_fasta, split_bam_by_deletion_length, merge_and_count_deletions
@@ -87,79 +74,79 @@ def readConfigFile(config_file):
 readConfigFile(args.config_file)
 cur_dir = os.getcwd()
 
-@jobs_limit(12)
-@transform(["/data/*.split.bam"],suffix(".split.bam"),".splitreads.bam")
-def extract_split_reads(infile,outfile):
-   print(infile,'-->',outfile)
-   name = re.sub(".split.bam","",infile)
-   os.system(f"/app/sambamba-0.8.2-linux-amd64-static index -t 4 {infile}")
-   # Run python script to extract split reads with little filtering:
-   # Edit distance of 1 or more
-   os.system(f"python realignbam.py \
-               -i {infile} \
-               -o {outfile} \
-               -t {os.getcwd()}")
-
-@follows(extract_split_reads)
-@subdivide(["/data/*splitreads.bam"],formatter(r".splitreads.bam$"),"/data/{basename[0]}.fastq.gz")
-def splitreads_to_fastq(infile,outfile):
-    print(infile,'-->',outfile)
-    cmd = f"samtools fastq -o {outfile} -0 /dev/null {infile}"
-    os.system(cmd)
-
-splitreadsregex = "(?P<FILESTRING>.+).splitreads.R[12].fastq.gz$"
-@jobs_limit(5)
-@follows(splitreads_to_fastq)
-@transform("/data/*.splitreads.fastq.gz", suffix(".splitreads.fastq.gz"),".bbmap.bam")
-def bbmap_split_reads(infile,outfile):
-    name = re.sub(".bbmap.bam","",outfile)
-    os.system(f"bbmap.sh \
-           -Xmx24g \
-           ref={config_dict['bbmap_genome']} \
-           nodisk=t \
-           rgid={name} \
-           rgpl=illumina \
-           rgsm={name} \
-           in={infile} \
-           out={outfile} \
-           outu={name}.bbmap.unmapped.fastq \
-           unpigz=t \
-           threads=6 \
-           maxindel=1000k \
-           rescuedist=1000000 \
-           usejni=t \
-           rgid={name} \
-           mdtag=t \
-           nhtag=t \
-           xmtag=t \
-           nmtag=t \
-           stoptag=t \
-           lengthtag=t \
-           idtag=t \
-           inserttag=t \
-           scoretag=t \
-           usemodulo=t \
-           statsfile={name}.bbmap.align.stats.log \
-           machineout=t")
+# @jobs_limit(12)
+# @transform(["/data/*.split.bam"],suffix(".split.bam"),".splitreads.bam")
+# def extract_split_reads(infile,outfile):
+#    print(infile,'-->',outfile)
+#    name = re.sub(".split.bam","",infile)
+#    os.system(f"/app/sambamba-0.8.2-linux-amd64-static index -t 4 {infile}")
+#    # Run python script to extract split reads with little filtering:
+#    # Edit distance of 1 or more
+#    os.system(f"python realignbam.py \
+#                -i {infile} \
+#                -o {outfile} \
+#                -t {os.getcwd()}")
 #
-# @jobs_limit(4)
-# @follows(bbmap_split_reads)
-# @transform(["*.bbmap.bam"], suffix(".bbmap.bam"), ".bbmap.sorted.bam")
-# def sort_bbmap_bam(infile, outfile):
-#     print(infile, '-->', outfile)
-#     """
-#     sort the bam using sambamba, to result in a coordinate sorted bam, suitable for GATK
-#     This is CONSIDERABLY faster than letting picard FixMateInformation do it and is more stable in reagards to system resource.
-#     """
-#     #temp_dir=os.getcwd()
-#     temp_dir='/mnt/fire/scratch'
-#     os.system(f"{config_dict['sambamba']} sort -m 4G -t 8 --tmpdir {temp_dir} -o {outfile} {infile} &> {outfile}.sambamba-coordinate-sort.log")
-#     time.sleep(2)
-#     if config_dict['debugmode'] == 'T':
-#         pass
-#     else:
-#         os.system(f"> {infile}")
+# @follows(extract_split_reads)
+# @subdivide(["/data/*splitreads.bam"],formatter(r".splitreads.bam$"),"/data/{basename[0]}.fastq.gz")
+# def splitreads_to_fastq(infile,outfile):
+#     print(infile,'-->',outfile)
+#     cmd = f"samtools fastq -o {outfile} -0 /dev/null {infile}"
+#     os.system(cmd)
 #
+# splitreadsregex = "(?P<FILESTRING>.+).splitreads.R[12].fastq.gz$"
+# @jobs_limit(5)
+# @follows(splitreads_to_fastq)
+# @transform("/data/*.splitreads.fastq.gz", suffix(".splitreads.fastq.gz"),".bbmap.bam")
+# def bbmap_split_reads(infile,outfile):
+#     name = re.sub(".bbmap.bam","",outfile)
+#     os.system(f"bbmap.sh \
+#            -Xmx24g \
+#            ref={config_dict['bbmap_genome']} \
+#            nodisk=t \
+#            rgid={name} \
+#            rgpl=illumina \
+#            rgsm={name} \
+#            in={infile} \
+#            out={outfile} \
+#            outu={name}.bbmap.unmapped.fastq \
+#            unpigz=t \
+#            threads=6 \
+#            maxindel=1000k \
+#            rescuedist=1000000 \
+#            usejni=t \
+#            rgid={name} \
+#            mdtag=t \
+#            nhtag=t \
+#            xmtag=t \
+#            nmtag=t \
+#            stoptag=t \
+#            lengthtag=t \
+#            idtag=t \
+#            inserttag=t \
+#            scoretag=t \
+#            usemodulo=t \
+#            statsfile={name}.bbmap.align.stats.log \
+#            machineout=t")
+
+@jobs_limit(4)
+#@follows(bbmap_split_reads)
+@transform(["*.bbmap.bam"], suffix(".bbmap.bam"), ".bbmap.sorted.bam")
+def sort_bbmap_bam(infile, outfile):
+     print(infile, '-->', outfile)
+     """
+     sort the bam using sambamba, to result in a coordinate sorted bam, suitable for GATK
+     This is CONSIDERABLY faster than letting picard FixMateInformation do it and is more stable in reagards to system resource.
+     """
+     #temp_dir=os.getcwd()
+     temp_dir=os.getcwd()
+     os.system(f"sambamba-0.8.2-linux-amd64-static sort -m 4G -t {config_dict['sambamba_sort_threads']} --tmpdir {temp_dir} -o {outfile} {infile} &> {outfile}.sambamba-coordinate-sort.log")
+     time.sleep(2)
+     if config_dict['debugmode'] == 'T':
+         pass
+     else:
+         os.system(f"> {infile}")
+
 # @follows(sort_bbmap_bam)
 # @collate("*.bbmap.sorted.bam", formatter("([^/]+).chr([0-9]|[0-9][0-9]|X|Y|MT).bbmap.sorted.bam$"),"{path[0]}/{1[0]}.bbmap.bam")
 # def merge_bbmap(infiles,outfile):
