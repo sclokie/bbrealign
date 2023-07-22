@@ -197,8 +197,6 @@ def calculate_depth(infile,outfile):
     # create genome file using a custom function that summarises a given fasta on the fly -
     # that is the same one used by bbmap in this case
     # Note that for testing I set the lower filter to 1. 5 is better for production.
-    print("Determine contig sizes for bedtools.")
-
     summarise_fasta(config_dict['bbmap_genome'],
                     'genome_sizes_contigs.txt')
     os.system('mv genome_sizes_contigs.txt /data/genome_sizes_contigs.txt')
@@ -207,14 +205,14 @@ def calculate_depth(infile,outfile):
     | bedtools merge -i - \
     | bedtools slop -i - -g /data/genome_sizes_contigs.txt -b 300 > {outfile}"
     os.system(cmd)
-#
+
 # @follows(calculate_depth)
-# @transform(["*.bbmap.roi.bed"], suffix(".bbmap.roi.bed"), ".bbmap.roi.bam")
-# def filter_bbmap_bam_for_roi(infile, outfile):
-#     # filter bam
-#     bam_name = re.sub(".bbmap.roi.bed",".bbmap.cigar.filtered.bam",infile)
-#     filter_cmd = f"intersectBed -wa -a {bam_name} -b {infile} > {outfile}"
-#     os.system(filter_cmd)
+@transform(["/data/*.bbmap.roi.bed"], suffix(".bbmap.roi.bed"), ".bbmap.roi.bam")
+def filter_bbmap_bam_for_roi(infile, outfile):
+    # filter bam
+    bam_name = re.sub(".bbmap.roi.bed",".bbmap.cigar.filtered.bam",infile)
+    filter_cmd = f"intersectBed -wa -a {bam_name} -b {infile} > {outfile}"
+    os.system(filter_cmd)
 #
 # @follows(filter_bbmap_bam_for_roi)
 # @transform(["*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bbmap.roi.bam.bai")
