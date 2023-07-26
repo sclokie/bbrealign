@@ -6,6 +6,7 @@ import os
 import subprocess
 import os.path
 import re
+from collections import defaultdict
 import shutil
 from argparse import RawTextHelpFormatter
 from ruffus import *
@@ -238,87 +239,77 @@ cur_dir = os.getcwd()
 #     os.system(cmd)
 #
 # @follows(calculate_depth_for_bbmap_realigned)
-@transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".annotated.bed")
-def create_annotated_bed(infile,outfile):
-    print(infile,'-->',outfile)
-    # download a list of genes, remove header and merge
-    # os.system(f"mysql \
-    #             --user=genome \
-    #             --host=genome-mysql.soe.ucsc.edu \
-    #             -A -e \"select chrom, txStart, txEnd, name2 from hg19.refGene\" \
-    #             | sed \'1d\' \
-    #             | bedtools sort -i - \
-    #             | bedtools merge -c 4 -o distinct | sed 's/chr//' > hg19.genes.bed")
-    # os.system('mv hg19.genes.bed /data/hg19.genes.bed')
-    #merge_and_count_deletions(infile,outfile)
-    # command = f"""bedtools bamtobed -cigar -tag NM -i {infile} \
-    #                | bedtools merge -c 5,5,7 -o first,count,first \
-    #                | intersectBed -loj -a stdin -b hg19.genes.bed \
-    #                | awk '{{OFS="\\t"}} {{printf "%s\\t%s\\t%s\\t%.0f\\t%s\\t%s\\t%s\\n", $1, $2, $3, $4, $5, $10, $6}}' \
-    #                > {outfile}"""
-
-    # command = f"""bedtools bamtobed -cigar -tag NM -i {infile} \
-    #               | intersectBed -loj -a stdin -b /data/hg19.genes.bed \
-    #               | sed 's/[\t]*$//' \
-    #               | awk '{{OFS="\\t"}} {{printf "%s\\t%s\\t%s\\t%.0f\\t%s\\t%s\\t%s\\n", $1, $2, $3, $5, $7, $10, $11}}' \
-    #               > {outfile}"""
-    command = f"""bedtools bamtobed -cigar -tag NM -i {infile} \
-                  | intersectBed -loj -a stdin -b /data/hg19.genes.sorted.bed \
-                  > {outfile}"""
-    print(command)
-    subprocess.run(command, shell=True, check=True)
+# @transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".annotated.bed")
+# def create_annotated_bed(infile,outfile):
+#     print(infile,'-->',outfile)
+#     # download a list of genes, remove header and merge
+#     os.system(f"mysql \
+#                  --user=genome \
+#                  --host=genome-mysql.soe.ucsc.edu \
+#                  -A -e \"select chrom, txStart, txEnd, name2 from hg19.refGene\" \
+#                  | sed \'1d\' \
+#                  | bedtools sort -i - \
+#                  | bedtools merge -c 4 -o distinct | sed 's/chr//' > hg19.genes.bed")
+#     os.system('mv hg19.genes.bed /data/hg19.genes.bed')
+#     #merge_and_count_deletions(infile,outfile)
+#     command = f"""bedtools bamtobed -cigar -tag NM -i {infile} \
+#                     | bedtools merge -c 5,5,7 -o first,count,first \
+#                     | intersectBed -loj -a stdin -b /data/hg19.genes.bed \
+#                     | awk '{{OFS="\\t"}} {{printf "%s\\t%s\\t%s\\t%.0f\\t%s\\t%s\\t%s\\n", $1, $2, $3, $4, $5, $10, $6}}' \
+#                     > {outfile}"""
+#
+#     subprocess.run(command, shell=True, check=True)
 #
 # @follows(create_annotated_bed)
-# @transform(["*.annotated.bed"],suffix(".annotated.bed"),".annotated.summary.bed")
-# def create_summary_bed(infile,outfile):
-#     print(infile,'-->',outfile)
-#     import re
-#     from collections import defaultdict
-#
-#     bed_dict = defaultdict(list)
-#
-#     with open(f'{infile}', 'r') as f:
-#         for line in f:
-#             fields = line.strip().split("\t")  # strip() removes newline characters at the end of lines
-#             if len(fields) < 7:  # Ignore lines with fewer than 7 columns
-#                 continue
-#
-#             # If column 7 is '.', replace it with a short name
-#             if fields[6] == '.':
-#                 fields[6] = f"{fields[0]}_{fields[1][-3:]}_{fields[2][-3:]}"
-#
-#             # Count the number of operations in column 5
-#             num_operations = len(re.findall('[0-9]+[MIDNSHP=X]', fields[4]))
-#
-#             if num_operations > 4:  # Ignore rows with more than 4 operations
-#                 continue
-#
-#             key = (fields[3], fields[6])  # Creates a tuple from the 4th and 7th column
-#             bed_dict[key].append(fields)
-#
-#     # Now bed_dict contains all the rows grouped by the 4th and 7th column
-#     # Let's create a summary
-#     summary = {}
-#
-#     for key, values in bed_dict.items():
-#         score = int(key[0])
-#         if score <= 40:  # Ignore rows with score <= 20
-#             continue
-#         chromosome = values[0][0]
-#         start_positions = [int(v[1]) for v in values]
-#         end_positions = [int(v[2]) for v in values]
-#         min_start = min(start_positions)
-#         max_end = max(end_positions)
-#         count = len(values)
-#         if count >= 5:  # Only include rows with count >= 3
-#             summary[key] = (chromosome, min_start, max_end, count)  # Store chromosome, min start, max end, count
-#
-#     # Now, 'summary' is a dictionary with keys as (column 4, column 7) tuples and values as summarized events
-#     # Let's write it to a new BED file
-#     with open(f'{outfile}', 'w') as f:
-#         for key, value in summary.items():
-#             f.write(f"{value[0]}\t{value[1]}\t{value[2]}\t{key[0]}|{key[1]}|{value[3]}\n")
-#
+@transform(["/data/*.annotated.bed"],suffix(".annotated.bed"),".annotated.summary.bed")
+def create_summary_bed(infile,outfile):
+    print(infile,'-->',outfile)
+
+    bed_dict = defaultdict(list)
+
+    with open(f'{infile}', 'r') as f:
+        for line in f:
+            fields = line.strip().split("\t")  # strip() removes newline characters at the end of lines
+            if len(fields) < 7:  # Ignore lines with fewer than 7 columns
+                continue
+
+            # If column 7 is '.', replace it with a short name
+            if fields[6] == '.':
+                fields[6] = f"{fields[0]}_{fields[1][-3:]}_{fields[2][-3:]}"
+
+            # Count the number of operations in column 5
+            num_operations = len(re.findall('[0-9]+[MIDNSHP=X]', fields[4]))
+
+            if num_operations > 4:  # Ignore rows with more than 4 operations
+                continue
+
+            key = (fields[3], fields[6])  # Creates a tuple from the 4th and 7th column
+            bed_dict[key].append(fields)
+
+    # bed_dict contains all the rows grouped by the 4th and 7th column
+    # Create summary
+    summary = {}
+
+
+    for key, values in bed_dict.items():
+        score = int(key[0])
+        if score <= 40:  # Ignore rows with score <= 20
+            continue
+        chromosome = values[0][0]
+        start_positions = [int(v[1]) for v in values]
+        end_positions = [int(v[2]) for v in values]
+        min_start = min(start_positions)
+        max_end = max(end_positions)
+        count = len(values)
+        if count >= int(config_dict['minimum_depth_bbmap_filter']):  # Only include rows with count >= 3
+            summary[key] = (chromosome, min_start, max_end, count)  # Store chromosome, min start, max end, count
+
+    # Now, 'summary' is a dictionary with keys as (column 4, column 7) tuples and values as summarized events
+    # Let's write it to a new BED file
+    with open(f'{outfile}', 'w') as f:
+        for key, value in summary.items():
+            f.write(f"{value[0]}\t{value[1]}\t{value[2]}\t{key[0]}|{key[1]}|{value[3]}\n")
+
 #
 # @follows(create_summary_bed)
 # @transform(["*.annotated.summary.bed"],suffix(".annotated.summary.bed"),".annotated.summary.txt")
