@@ -4,10 +4,13 @@ FROM ubuntu:22.04
 
 RUN apt-get update
 #RUN apt-get install -y bash
+RUN apt-get install -y mysql-client
+RUN apt-get update
 RUN apt-get install -y wget
 RUN apt-get install -y python3-pip
 RUN apt-get install -y libcurl4
 RUN apt-get install -y libncurses-dev libbz2-dev liblzma-dev # for samtools-1.11 (needed for bbmap)
+RUN apt-get install bedtools -y
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
 #Install updated crypto library for samtools
@@ -33,7 +36,9 @@ RUN wget \
 RUN conda --version
 RUN conda install -c bioconda bbmap
 RUN conda install -c bioconda picard
-RUN conda install -c bioconda bedtools
+#RUN conda install -c bioconda bedtools # Do not use conda - bedtools needs to be >=2.30.0
+
+
 
 #Set up App
 
@@ -62,6 +67,8 @@ RUN chmod +x sambamba-0.8.2-linux-amd64-static
 #RUN make
 #RUN make install
 RUN ln -s /app/samtools-1.11/samtools /usr/bin/samtools
+
+RUN rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 ENTRYPOINT ["python", "bbrealign.py"]
