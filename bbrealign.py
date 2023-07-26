@@ -3,6 +3,7 @@ import argparse
 from glob import glob
 import sys
 import os
+import subprocess
 import os.path
 import re
 import shutil
@@ -223,44 +224,49 @@ cur_dir = os.getcwd()
 #     os.system(f"./sambamba-0.8.2-linux-amd64-static index -t 12 {infile}")
 #
 # @follows(index_filtered_bbmap)
-@transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bbmap_realigned.roi.bed")
-def calculate_depth_for_bbmap_realigned(infile,outfile):
-    #create genome file using a custom function that summarises a given fasta on the fly -
-    # that is the same one used by bbmap in this case
-    summarise_fasta(config_dict['bbmap_genome'],'genome_sizes_contigs.txt')
-    os.system('mv genome_sizes_contigs.txt /data/genome_sizes_contigs.txt')
-    min_depth = int(config_dict['minimum_depth_bbmap_filter'])
-    cmd = f"bedtools genomecov -bga -ibam {infile} \
-    | awk '$4 > {min_depth}' \
-    | bedtools merge -i - \
-    | bedtools slop -i - -g /data/genome_sizes_contigs.txt -b 300 > {outfile}"
-    os.system(cmd)
+# @transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bbmap_realigned.roi.bed")
+# def calculate_depth_for_bbmap_realigned(infile,outfile):
+#     #create genome file using a custom function that summarises a given fasta on the fly -
+#     # that is the same one used by bbmap in this case
+#     summarise_fasta(config_dict['bbmap_genome'],'genome_sizes_contigs.txt')
+#     os.system('mv genome_sizes_contigs.txt /data/genome_sizes_contigs.txt')
+#     min_depth = int(config_dict['minimum_depth_bbmap_filter'])
+#     cmd = f"bedtools genomecov -bga -ibam {infile} \
+#     | awk '$4 > {min_depth}' \
+#     | bedtools merge -i - \
+#     | bedtools slop -i - -g /data/genome_sizes_contigs.txt -b 300 > {outfile}"
+#     os.system(cmd)
 #
 # @follows(calculate_depth_for_bbmap_realigned)
-# @transform(["*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".annotated.bed")
-# def create_annotated_bed(infile,outfile):
-#     print(infile,'-->',outfile)
-#     # download a list of genes, remove header and merge
-#     # os.system(f"mysql \
-#     #             --user=genome \
-#     #             --host=genome-mysql.soe.ucsc.edu \
-#     #             -A -e \"select chrom, txStart, txEnd, name2 from hg19.refGene\" \
-#     #             | sed \'1d\' \
-#     #             | bedtools sort -i - \
-#     #             | bedtools merge -c 4 -o distinct | sed 's/chr//' > hg19.genes.bed")
-#     #merge_and_count_deletions(infile,outfile)
-#     # command = f"""bedtools bamtobed -cigar -tag NM -i {infile} \
-#     #                | bedtools merge -c 5,5,7 -o first,count,first \
-#     #                | intersectBed -loj -a stdin -b hg19.genes.bed \
-#     #                | awk '{{OFS="\\t"}} {{printf "%s\\t%s\\t%s\\t%.0f\\t%s\\t%s\\t%s\\n", $1, $2, $3, $4, $5, $10, $6}}' \
-#     #                > {outfile}"""
-#
-#     command = f"""bedtools bamtobed -cigar -tag NM -i {infile} \
-#                   | intersectBed -loj -a stdin -b hg19.genes.bed \
-#                   | awk '{{OFS="\\t"}} {{printf "%s\\t%s\\t%s\\t%.0f\\t%s\\t%s\\t%s\\n", $1, $2, $3, $5, $7, $10, $11}}' \
-#                   > {outfile}"""
-#
-#     subprocess.run(command, shell=True, check=True)
+@transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".annotated.bed")
+def create_annotated_bed(infile,outfile):
+    print(infile,'-->',outfile)
+    # download a list of genes, remove header and merge
+    # os.system(f"mysql \
+    #             --user=genome \
+    #             --host=genome-mysql.soe.ucsc.edu \
+    #             -A -e \"select chrom, txStart, txEnd, name2 from hg19.refGene\" \
+    #             | sed \'1d\' \
+    #             | bedtools sort -i - \
+    #             | bedtools merge -c 4 -o distinct | sed 's/chr//' > hg19.genes.bed")
+    # os.system('mv hg19.genes.bed /data/hg19.genes.bed')
+    #merge_and_count_deletions(infile,outfile)
+    # command = f"""bedtools bamtobed -cigar -tag NM -i {infile} \
+    #                | bedtools merge -c 5,5,7 -o first,count,first \
+    #                | intersectBed -loj -a stdin -b hg19.genes.bed \
+    #                | awk '{{OFS="\\t"}} {{printf "%s\\t%s\\t%s\\t%.0f\\t%s\\t%s\\t%s\\n", $1, $2, $3, $4, $5, $10, $6}}' \
+    #                > {outfile}"""
+
+    # command = f"""bedtools bamtobed -cigar -tag NM -i {infile} \
+    #               | intersectBed -loj -a stdin -b /data/hg19.genes.bed \
+    #               | sed 's/[\t]*$//' \
+    #               | awk '{{OFS="\\t"}} {{printf "%s\\t%s\\t%s\\t%.0f\\t%s\\t%s\\t%s\\n", $1, $2, $3, $5, $7, $10, $11}}' \
+    #               > {outfile}"""
+    command = f"""bedtools bamtobed -cigar -tag NM -i {infile} \
+                  | intersectBed -loj -a stdin -b /data/hg19.genes.sorted.bed \
+                  > {outfile}"""
+    print(command)
+    subprocess.run(command, shell=True, check=True)
 #
 # @follows(create_annotated_bed)
 # @transform(["*.annotated.bed"],suffix(".annotated.bed"),".annotated.summary.bed")
