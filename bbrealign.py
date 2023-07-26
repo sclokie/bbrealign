@@ -15,8 +15,8 @@ import pandas as pd
 import time
 from Bio import SeqIO
 
-from utilities import filter_sam, update_cigar_distribution, filter_bam_file
-from utilities import summarise_fasta, split_bam_by_deletion_length, merge_and_count_deletions
+#from utilities import filter_sam, update_cigar_distribution, filter_bam_file
+from utilities import summarise_fasta, filter_bam_file, split_bam_by_deletion_length, merge_and_count_deletions
 
 parser = argparse.ArgumentParser(description='\
 Process bwa2 aligned data to extract interesting reads that could be realigned using bbmap.',
