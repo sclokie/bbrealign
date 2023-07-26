@@ -10,6 +10,7 @@ from collections import defaultdict
 import shutil
 from argparse import RawTextHelpFormatter
 from ruffus import *
+import pandas as pd
 import time
 from Bio import SeqIO
 
@@ -261,81 +262,79 @@ cur_dir = os.getcwd()
 #     subprocess.run(command, shell=True, check=True)
 #
 # @follows(create_annotated_bed)
-@transform(["/data/*.annotated.bed"],suffix(".annotated.bed"),".annotated.summary.bed")
-def create_summary_bed(infile,outfile):
-    print(infile,'-->',outfile)
-
-    bed_dict = defaultdict(list)
-
-    with open(f'{infile}', 'r') as f:
-        for line in f:
-            fields = line.strip().split("\t")  # strip() removes newline characters at the end of lines
-            if len(fields) < 7:  # Ignore lines with fewer than 7 columns
-                continue
-
-            # If column 7 is '.', replace it with a short name
-            if fields[6] == '.':
-                fields[6] = f"{fields[0]}_{fields[1][-3:]}_{fields[2][-3:]}"
-
-            # Count the number of operations in column 5
-            num_operations = len(re.findall('[0-9]+[MIDNSHP=X]', fields[4]))
-
-            if num_operations > 4:  # Ignore rows with more than 4 operations
-                continue
-
-            key = (fields[3], fields[6])  # Creates a tuple from the 4th and 7th column
-            bed_dict[key].append(fields)
-
-    # bed_dict contains all the rows grouped by the 4th and 7th column
-    # Create summary
-    summary = {}
-
-
-    for key, values in bed_dict.items():
-        score = int(key[0])
-        if score <= 40:  # Ignore rows with score <= 20
-            continue
-        chromosome = values[0][0]
-        start_positions = [int(v[1]) for v in values]
-        end_positions = [int(v[2]) for v in values]
-        min_start = min(start_positions)
-        max_end = max(end_positions)
-        count = len(values)
-        if count >= int(config_dict['minimum_depth_bbmap_filter']):  # Only include rows with count >= 3
-            summary[key] = (chromosome, min_start, max_end, count)  # Store chromosome, min start, max end, count
-
-    # Now, 'summary' is a dictionary with keys as (column 4, column 7) tuples and values as summarized events
-    # Let's write it to a new BED file
-    with open(f'{outfile}', 'w') as f:
-        for key, value in summary.items():
-            f.write(f"{value[0]}\t{value[1]}\t{value[2]}\t{key[0]}|{key[1]}|{value[3]}\n")
+# @transform(["/data/*.annotated.bed"],suffix(".annotated.bed"),".annotated.summary.bed")
+# def create_summary_bed(infile,outfile):
+#     print(infile,'-->',outfile)
+#
+#     bed_dict = defaultdict(list)
+#
+#     with open(f'{infile}', 'r') as f:
+#         for line in f:
+#             fields = line.strip().split("\t")  # strip() removes newline characters at the end of lines
+#             if len(fields) < 7:  # Ignore lines with fewer than 7 columns
+#                 continue
+#
+#             # If column 7 is '.', replace it with a short name
+#             if fields[6] == '.':
+#                 fields[6] = f"{fields[0]}_{fields[1][-3:]}_{fields[2][-3:]}"
+#
+#             # Count the number of operations in column 5
+#             num_operations = len(re.findall('[0-9]+[MIDNSHP=X]', fields[4]))
+#
+#             if num_operations > 4:  # Ignore rows with more than 4 operations
+#                 continue
+#
+#             key = (fields[3], fields[6])  # Creates a tuple from the 4th and 7th column
+#             bed_dict[key].append(fields)
+#
+#     # bed_dict contains all the rows grouped by the 4th and 7th column
+#     # Create summary
+#     summary = {}
+#
+#
+#     for key, values in bed_dict.items():
+#         score = int(key[0])
+#         if score <= 40:  # Ignore rows with score <= 20
+#             continue
+#         chromosome = values[0][0]
+#         start_positions = [int(v[1]) for v in values]
+#         end_positions = [int(v[2]) for v in values]
+#         min_start = min(start_positions)
+#         max_end = max(end_positions)
+#         count = len(values)
+#         if count >= int(config_dict['minimum_depth_bbmap_filter']):  # Only include rows with count >= 3
+#             summary[key] = (chromosome, min_start, max_end, count)  # Store chromosome, min start, max end, count
+#
+#     # Now, 'summary' is a dictionary with keys as (column 4, column 7) tuples and values as summarized events
+#     # Let's write it to a new BED file
+#     with open(f'{outfile}', 'w') as f:
+#         for key, value in summary.items():
+#             f.write(f"{value[0]}\t{value[1]}\t{value[2]}\t{key[0]}|{key[1]}|{value[3]}\n")
 
 #
 # @follows(create_summary_bed)
-# @transform(["*.annotated.summary.bed"],suffix(".annotated.summary.bed"),".annotated.summary.txt")
-# def summarise_deletions(infile, outfile):
-#     import pandas as pd
-#
-#     # Load the bed file into a pandas DataFrame
-#     df = pd.read_csv(f'{infile}', sep='\t', header=None)
-#
-#     # Split the 4th column into separate columns
-#     df[['score', 'name', 'count']] = df[3].str.split('|', expand=True)
-#
-#     # Convert 'score' and 'count' columns to int for proper sorting
-#     df[['score', 'count']] = df[['score', 'count']].apply(pd.to_numeric)
-#
-#     # Drop the original 4th column
-#     df = df.drop(3, axis=1)
-#
-#     # Rename the columns for clarity
-#     df.columns = ['chromosome', 'start', 'end', 'score', 'name', 'count']
-#
-#     # Sort by 'score' then 'count'
-#     df = df.sort_values(['score', 'count'], ascending=False)
-#
-#     # Save the sorted dataframe to a new bed file
-#     df.to_csv(f'{outfile}', sep='\t', index=False, header=False)
+@transform(["/data/*.annotated.summary.bed"],suffix(".annotated.summary.bed"),".annotated.summary.txt")
+def summarise_deletions(infile, outfile):
+
+    df = pd.read_csv(f'{infile}', sep='\t', header=None)
+
+    # Split the 4th column (collapsed bed col) into separate columns
+    df[['score', 'name', 'count']] = df[3].str.split('|', expand=True)
+
+    # Convert 'score' and 'count' columns to int for proper sorting
+    df[['score', 'count']] = df[['score', 'count']].apply(pd.to_numeric)
+
+    # Drop the original 4th column
+    df = df.drop(3, axis=1)
+
+    # Rename the columns for clarity
+    df.columns = ['chromosome', 'start', 'end', 'score', 'name', 'count']
+
+    # Sort by 'score' then 'count'
+    df = df.sort_values(['score', 'count'], ascending=False)
+
+    # Save the sorted dataframe to a new bed file
+    df.to_csv(f'{outfile}', sep='\t', index=False, header=False)
 #
 #
 # @follows(summarise_deletions)
