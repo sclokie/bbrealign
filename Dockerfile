@@ -36,9 +36,7 @@ RUN wget \
 RUN conda --version
 RUN conda install -c bioconda bbmap
 RUN conda install -c bioconda picard
-#RUN conda install -c bioconda bedtools # Do not use conda - bedtools needs to be >=2.30.0
-
-
+###RUN conda install -c bioconda bedtools # Do not use conda - bedtools needs to be >=2.30.0
 
 #Set up App
 
@@ -55,17 +53,17 @@ RUN pip install pyvcf
 COPY . .
 
 #Gather neded programs from the internet, rather than keep on github
-#RUN python /app/download_resources.py
+RUN python /app/download_resources.py
 # sort sambamba permissions
 RUN chmod +x sambamba-0.8.2-linux-amd64-static
 
 # Install samtools
-#RUN wget https://github.com/samtools/samtools/releases/download/1.11/samtools-1.11.tar.bz2
-#RUN tar -jvxf samtools-1.11.tar.bz2
-#WORKDIR samtools-1.11
-#RUN ./configure --prefix=/app/samtools-1.11
-#RUN make
-#RUN make install
+RUN wget https://github.com/samtools/samtools/releases/download/1.11/samtools-1.11.tar.bz2
+RUN tar -jvxf samtools-1.11.tar.bz2
+WORKDIR samtools-1.11
+RUN ./configure --prefix=/app/samtools-1.11
+RUN make
+RUN make install
 RUN ln -s /app/samtools-1.11/samtools /usr/bin/samtools
 
 RUN rm -rf /var/lib/apt/lists/*
