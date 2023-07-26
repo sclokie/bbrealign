@@ -1,11 +1,11 @@
 
-#Computer specific data
+# Maintenance
 #debug T or F
 debugmode=T
 #tidyup T or F
 tidyup=F
 
-
+# Machine specific data
 cpu_count=32
 fastp_threads=4
 bwa_threads=8
@@ -13,7 +13,6 @@ bwa2_threads=28
 sambamba_sort_threads=4
 
 # Genome specific data
-
 bwa_genome_fasta=/mnt/fire/genomes/human/human_g1k_v37_decoy.fasta
 bwa2_genome_fasta=/mnt/fire/genomes/human/bwa2/human_g1k_v37_decoy.fasta
 bwa2_genome_dict=/data/genomic-resources/human/gatk_bundle/hs37d5/bwa-mem2/hs37d5.dict
