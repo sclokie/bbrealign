@@ -1,6 +1,5 @@
 
 #Computer specific data
-#Note max limit of 192 simultaneous threads in Women's data centre.
 #debug T or F
 debugmode=T
 #tidyup T or F
