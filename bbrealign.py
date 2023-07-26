@@ -10,6 +10,7 @@ from collections import defaultdict
 import shutil
 from argparse import RawTextHelpFormatter
 from ruffus import *
+import matplotlib.pyplot as plt
 import pandas as pd
 import time
 from Bio import SeqIO
@@ -313,55 +314,52 @@ cur_dir = os.getcwd()
 
 #
 # @follows(create_summary_bed)
-@transform(["/data/*.annotated.summary.bed"],suffix(".annotated.summary.bed"),".annotated.summary.txt")
-def summarise_deletions(infile, outfile):
-
-    df = pd.read_csv(f'{infile}', sep='\t', header=None)
-
-    # Split the 4th column (collapsed bed col) into separate columns
-    df[['score', 'name', 'count']] = df[3].str.split('|', expand=True)
-
-    # Convert 'score' and 'count' columns to int for proper sorting
-    df[['score', 'count']] = df[['score', 'count']].apply(pd.to_numeric)
-
-    # Drop the original 4th column
-    df = df.drop(3, axis=1)
-
-    # Rename the columns for clarity
-    df.columns = ['chromosome', 'start', 'end', 'score', 'name', 'count']
-
-    # Sort by 'score' then 'count'
-    df = df.sort_values(['score', 'count'], ascending=False)
-
-    # Save the sorted dataframe to a new bed file
-    df.to_csv(f'{outfile}', sep='\t', index=False, header=False)
+# @transform(["/data/*.annotated.summary.bed"],suffix(".annotated.summary.bed"),".annotated.summary.txt")
+# def summarise_deletions(infile, outfile):
 #
+#     df = pd.read_csv(f'{infile}', sep='\t', header=None)
 #
+#     # Split the 4th column (collapsed bed col) into separate columns
+#     df[['score', 'name', 'count']] = df[3].str.split('|', expand=True)
+#
+#     # Convert 'score' and 'count' columns to int for proper sorting
+#     df[['score', 'count']] = df[['score', 'count']].apply(pd.to_numeric)
+#
+#     # Drop the original 4th column
+#     df = df.drop(3, axis=1)
+#
+#     # Rename the columns for clarity
+#     df.columns = ['chromosome', 'start', 'end', 'score', 'name', 'count']
+#
+#     # Sort by 'score' then 'count'
+#     df = df.sort_values(['score', 'count'], ascending=False)
+#
+#     # Save the sorted dataframe to a new bed file
+#     df.to_csv(f'{outfile}', sep='\t', index=False, header=False)
+
+
 # @follows(summarise_deletions)
-# @transform(["*annotated.bed"], suffix("annotated.bed"), "distribution.png")
-# def plot_distributions(infile,outfile):
-#
-#     # plot the data
-#     import matplotlib.pyplot as plt
-#
-#     # Read the BED file and extract deletion sizes
-#     deletion_sizes = []
-#     with open(f'{infile}', 'r') as bedfile:
-#         for line in bedfile:
-#             fields = line.strip().split('\t')
-#             deletion_size = float(fields[3].split('|')[0])
-#             deletion_sizes.append(deletion_size)
-#
-#     # Create the histogram
-#     plt.hist(deletion_sizes, bins=30, edgecolor='black')
-#     plt.title(f'{infile}')
-#     plt.xlabel('Deletion Size')
-#     plt.ylabel('Frequency')
-#
-#     # Set y-axis to log scale
-#     plt.yscale('log')
-#
-#     # Save the figure as PNG
-#     plt.savefig(f'{outfile}', format='png')
+@transform(["/data/*annotated.bed"], suffix("annotated.bed"), "distribution.png")
+def plot_distributions(infile,outfile):
+
+    # Read the BED file and extract deletion sizes
+    deletion_sizes = []
+    with open(f'{infile}', 'r') as bedfile:
+        for line in bedfile:
+            fields = line.strip().split('\t')
+            deletion_size = float(fields[3].split('|')[0])
+            deletion_sizes.append(deletion_size)
+
+    # Create the histogram
+    plt.hist(deletion_sizes, bins=30, edgecolor='black')
+    plt.title(f'{infile}')
+    plt.xlabel('Deletion Size')
+    plt.ylabel('Frequency')
+
+    # Set y-axis to log scale
+    plt.yscale('log')
+
+    # Save the figure as PNG
+    plt.savefig(f'{outfile}', format='png')
 
 pipeline_run(multiprocess = int(config_dict['cpu_count']),verbose=1)
