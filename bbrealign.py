@@ -241,6 +241,14 @@ def calculate_depth_for_bbmap_realigned(infile,outfile):
 @follows(calculate_depth_for_bbmap_realigned)
 @transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".annotated.bed")
 def create_annotated_bed(infile,outfile):
+    """
+    A function that:
+    (1) downloads genes from ucsc and removes 'chr'
+    (2) accepts a bam file and converts to bed format, summarising the NM edits (merge operation).
+    (3) intersects this merged file with the gene symbols and outputs an annotated bed file
+        using a left outer join.
+
+    """
     print(infile,'-->',outfile)
     # download a list of genes, remove header and merge
     os.system(f"mysql \
