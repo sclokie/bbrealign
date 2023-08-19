@@ -287,9 +287,8 @@ def create_summary_bed(infile,outfile):
             bed_dict[key].append(fields)
 
     # bed_dict contains all the rows grouped by the 4th and 7th column
-    # Create summary
-    summary = {}
 
+    summary = {}
 
     for key, values in bed_dict.items():
         score = int(key[0])
@@ -304,8 +303,8 @@ def create_summary_bed(infile,outfile):
         if count >= int(config_dict['minimum_depth_bbmap_filter']):  # Only include rows with count >= 3
             summary[key] = (chromosome, min_start, max_end, count)  # Store chromosome, min start, max end, count
 
-    # Now, 'summary' is a dictionary with keys as (column 4, column 7) tuples and values as summarized events
-    # Let's write it to a new BED file
+    # 'summary' = dictionary with keys as (column 4, column 7) tuples and values as summarised events
+
     with open(f'{outfile}', 'w') as f:
         for key, value in summary.items():
             f.write(f"{value[0]}\t{value[1]}\t{value[2]}\t{key[0]}|{key[1]}|{value[3]}\n")
@@ -320,16 +319,13 @@ def summarise_deletions(infile, outfile):
     # Split the 4th column (collapsed bed col) into separate columns
     df[['score', 'name', 'count']] = df[3].str.split('|', expand=True)
 
-    # Convert 'score' and 'count' columns to int for proper sorting
+    # Convert 'score' and 'count' columns to int for sorting
     df[['score', 'count']] = df[['score', 'count']].apply(pd.to_numeric)
 
-    # Drop the original 4th column
-    df = df.drop(3, axis=1)
+    df = df.drop(3, axis=1)      # Drop the original 4th column
 
-    # Rename the columns for clarity
+    # Rename the columns
     df.columns = ['chromosome', 'start', 'end', 'score', 'name', 'count']
-
-    # Sort by 'score' then 'count'
     df = df.sort_values(['score', 'count'], ascending=False)
 
     # Save the sorted dataframe to a new bed file
@@ -354,10 +350,8 @@ def plot_distributions(infile,outfile):
     plt.xlabel('Deletion Size')
     plt.ylabel('Frequency')
 
-    # Set y-axis to log scale
     plt.yscale('log')
 
-    # Save the figure as PNG
     plt.savefig(f'{outfile}', format='png')
 
 pipeline_run(multiprocess = int(config_dict['cpu_count']),verbose=1)
