@@ -80,8 +80,8 @@ def readConfigFile(config_file):
 readConfigFile(args.config_file)
 cur_dir = os.getcwd()
 
-@jobs_limit(12)
-@transform(["/data/*.split.bam"],suffix(".split.bam"),".splitreads.bam")
+#@jobs_limit(12)
+#@transform(["/data/*.split.bam"],suffix(".split.bam"),".splitreads.bam")
 def extract_split_reads(infile,outfile):
    print(infile,'-->',outfile)
    name = re.sub(".split.bam","",infile)
@@ -93,17 +93,17 @@ def extract_split_reads(infile,outfile):
                -o {outfile} \
                -t {os.getcwd()}")
 
-@follows(extract_split_reads)
-@subdivide(["/data/*splitreads.bam"],formatter(r".splitreads.bam$"),"/data/{basename[0]}.fastq.gz")
+#@follows(extract_split_reads)
+#@subdivide(["/data/*splitreads.bam"],formatter(r".splitreads.bam$"),"/data/{basename[0]}.fastq.gz")
 def splitreads_to_fastq(infile,outfile):
     print(infile,'-->',outfile)
     cmd = f"samtools fastq -o {outfile} -0 /dev/null {infile}"
     os.system(cmd)
 
 splitreadsregex = "(?P<FILESTRING>.+).splitreads.R[12].fastq.gz$"
-@jobs_limit(4)
-@follows(splitreads_to_fastq)
-@transform("/data/*.splitreads.fastq.gz", suffix(".splitreads.fastq.gz"),".bbmap.bam")
+#@jobs_limit(4)
+#@follows(splitreads_to_fastq)
+#@transform("/data/*.splitreads.fastq.gz", suffix(".splitreads.fastq.gz"),".bbmap.bam")
 def bbmap_split_reads(infile,outfile):
     name = re.sub(".bbmap.bam","",outfile)
     os.system(f"bbmap.sh \
@@ -135,9 +135,9 @@ def bbmap_split_reads(infile,outfile):
            statsfile={name}.bbmap.align.stats.log \
            machineout=t")
 
-@jobs_limit(4)
-@follows(bbmap_split_reads)
-@transform(["/data/*.bbmap.bam"], suffix(".bbmap.bam"), ".bbmap.sorted.bam")
+#@jobs_limit(4)
+#@follows(bbmap_split_reads)
+#@transform(["/data/*.bbmap.bam"], suffix(".bbmap.bam"), ".bbmap.sorted.bam")
 def sort_bbmap_bam(infile, outfile):
      print(infile, '-->', outfile)
      """
@@ -153,8 +153,8 @@ def sort_bbmap_bam(infile, outfile):
      else:
          os.system(f"> {infile}")
 
-@follows(sort_bbmap_bam)
-@collate("/data/*.bbmap.sorted.bam", formatter("([^/]+).chr([0-9]|[0-9][0-9]|X|Y|MT).bbmap.sorted.bam$"),"{path[0]}/{1[0]}.merged.bbmap.bam")
+#@follows(sort_bbmap_bam)
+#@collate("/data/*.bbmap.sorted.bam", formatter("([^/]+).chr([0-9]|[0-9][0-9]|X|Y|MT).bbmap.sorted.bam$"),"{path[0]}/{1[0]}.merged.bbmap.bam")
 def merge_bbmap(infiles,outfile):
     """
     Sort the chromosomes in proper order so increase speed.
@@ -180,13 +180,13 @@ def merge_bbmap(infiles,outfile):
             CREATE_INDEX=true 2>{log_name}.merge.log"
 
     os.system(cmd)
-@follows(merge_bbmap)
-@transform(["/data/*.merged.bbmap.bam"],suffix(".merged.bbmap.bam"),".merged.bbmap.bam.bai")
+#@follows(merge_bbmap)
+#@transform(["/data/*.merged.bbmap.bam"],suffix(".merged.bbmap.bam"),".merged.bbmap.bam.bai")
 def index_merged_bbmap(infile,outfile):
     print(infile,'-->',outfile)
     os.system(f"samtools index {infile}")
-@follows(index_merged_bbmap)
-@transform(["/data/*.merged.bbmap.bam"],suffix(".merged.bbmap.bam"),".merged.bbmap.cigar.filtered.bam")
+#@follows(index_merged_bbmap)
+#@transform(["/data/*.merged.bbmap.bam"],suffix(".merged.bbmap.bam"),".merged.bbmap.cigar.filtered.bam")
 def filter_bbmap_on_cigar(infile,outfile):
     outfile_temp = f"{outfile}.temp"
     filter_bam_file(infile,outfile_temp)
@@ -194,8 +194,8 @@ def filter_bbmap_on_cigar(infile,outfile):
     os.system(f"samtools index {outfile}")
     os.system(f"rm {outfile_temp}")
 
-@follows(filter_bbmap_on_cigar)
-@transform(["/data/*.merged.bbmap.cigar.filtered.bam"],suffix(".merged.bbmap.cigar.filtered.bam"),".bbmap.roi.bed")
+#@follows(filter_bbmap_on_cigar)
+#@transform(["/data/*.merged.bbmap.cigar.filtered.bam"],suffix(".merged.bbmap.cigar.filtered.bam"),".bbmap.roi.bed")
 def calculate_depth(infile,outfile):
     # create genome file using a custom function that summarises a given fasta on the fly -
     # that is the same one used by bbmap in this case
@@ -210,22 +210,22 @@ def calculate_depth(infile,outfile):
     | bedtools slop -i - -g /data/genome_sizes_contigs.txt -b 300 > {outfile}"
     os.system(cmd)
 
-@follows(calculate_depth)
-@transform(["/data/*.bbmap.roi.bed"], suffix(".bbmap.roi.bed"), ".bbmap.roi.bam")
+#@follows(calculate_depth)
+#@transform(["/data/*.bbmap.roi.bed"], suffix(".bbmap.roi.bed"), ".bbmap.roi.bam")
 def filter_bbmap_bam_for_roi(infile, outfile):
     # filter bam
     bam_name = re.sub(".bbmap.roi.bed",".merged.bbmap.cigar.filtered.bam",infile)
     filter_cmd = f"intersectBed -wa -a {bam_name} -b {infile} > {outfile}"
     os.system(filter_cmd)
 
-@follows(filter_bbmap_bam_for_roi)
-@transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bbmap.roi.bam.bai")
+#@follows(filter_bbmap_bam_for_roi)
+#@transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bbmap.roi.bam.bai")
 def index_filtered_bbmap(infile,outfile):
     print(infile,'-->',outfile)
     os.system(f"./sambamba-0.8.2-linux-amd64-static index -t {int(config_dict['sambamba_sort_threads'])} {infile}")
 
-@follows(index_filtered_bbmap)
-@transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bbmap_realigned.roi.bed")
+#@follows(index_filtered_bbmap)
+#@transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bbmap_realigned.roi.bed")
 def calculate_depth_for_bbmap_realigned(infile,outfile):
     #create genome file using a custom function that summarises a given fasta on the fly -
     # that is the same one used by bbmap in this case
@@ -238,7 +238,7 @@ def calculate_depth_for_bbmap_realigned(infile,outfile):
     | bedtools slop -i - -g /data/genome_sizes_contigs.txt -b 300 > {outfile}"
     os.system(cmd)
 
-@follows(calculate_depth_for_bbmap_realigned)
+#@follows(calculate_depth_for_bbmap_realigned)
 @transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".annotated.bed")
 def create_annotated_bed(infile,outfile):
     """
