@@ -244,7 +244,7 @@ def create_annotated_bed(infile,outfile):
     """
     A function that:
     (1) downloads genes from ucsc and removes 'chr'
-    (2) accepts a bam file and converts to bed format, summarising the NM edits (merge operation).
+    (2) accepts a depth-filtered bam file and converts to bed format, summarising the NM edits (merge operation).
     (3) intersects this merged file with the gene symbols and outputs an annotated bed file
         using a left outer join.
 
@@ -261,7 +261,7 @@ def create_annotated_bed(infile,outfile):
     os.system('mv hg19.genes.bed /data/hg19.genes.bed')
     #merge_and_count_deletions(infile,outfile)
     command = f"""bedtools bamtobed -cigar -tag NM -i {infile} \
-                    | bedtools merge -c 5,5,7 -o first,count,first \
+                    | bedtools merge -c 5,5,7 -o max,count,first \
                     | intersectBed -loj -a stdin -b /data/hg19.genes.bed \
                     | awk '{{OFS="\\t"}} {{printf "%s\\t%s\\t%s\\t%.0f\\t%s\\t%s\\t%s\\n", $1, $2, $3, $4, $5, $10, $6}}' \
                     > {outfile}"""
