@@ -261,7 +261,7 @@ def create_annotated_bed(infile,outfile):
     os.system('mv hg19.genes.bed /data/hg19.genes.bed')
     #merge_and_count_deletions(infile,outfile)
     command = f"""bedtools bamtobed -cigar -tag NM -i {infile} \
-                    | bedtools merge -c 5,5,7 -o max,count,first \
+                    | bedtools merge -c 5,5,7 -o max,count,last \
                     | intersectBed -loj -a stdin -b /data/hg19.genes.bed \
                     | awk '{{OFS="\\t"}} {{printf "%s\\t%s\\t%s\\t%.0f\\t%s\\t%s\\t%s\\n", $1, $2, $3, $4, $5, $10, $6}}' \
                     > {outfile}"""
@@ -271,6 +271,10 @@ def create_annotated_bed(infile,outfile):
 @follows(create_annotated_bed)
 @transform(["/data/*.annotated.bed"],suffix(".annotated.bed"),".annotated.summary.bed")
 def create_summary_bed(infile,outfile):
+    """
+    The annotated.bed file has typically 200,000 entries per genome - too many.
+    Therefore, need a summary bed with some filtering applied.
+    """
     print(infile,'-->',outfile)
 
     bed_dict = defaultdict(list)
@@ -279,19 +283,21 @@ def create_summary_bed(infile,outfile):
         for line in f:
             fields = line.strip().split("\t")  # strip() removes newline characters at the end of lines
             if len(fields) < 7:  # Ignore lines with fewer than 7 columns
+                print("Ignoring.....")
                 continue
 
             # If column 7 is '.', replace it with a short name
             if fields[6] == '.':
                 fields[6] = f"{fields[0]}_{fields[1][-3:]}_{fields[2][-3:]}"
 
-            # Count the number of operations in column 5
-            num_operations = len(re.findall('[0-9]+[MIDNSHP=X]', fields[4]))
+            # Count the number of operations in column 7 (CIGAR col)
+            num_operations = len(re.findall('[0-9]+[MIDNSHP=X]', fields[6]))
 
             if num_operations > 4:  # Ignore rows with more than 4 operations
                 continue
 
-            key = (fields[3], fields[6])  # Creates a tuple from the 4th and 7th column
+
+            key = (fields[3], fields[6])  # Creates a tuple from the 4th and 7th column: (del_size,CIGAR)
             bed_dict[key].append(fields)
 
     # bed_dict contains all the rows grouped by the 4th and 7th column
@@ -300,7 +306,7 @@ def create_summary_bed(infile,outfile):
 
     for key, values in bed_dict.items():
         score = int(key[0])
-        if score <= 40:  # Ignore rows with score <= 20
+        if score >= 20:  # Ignore rows with score <= 20
             continue
         chromosome = values[0][0]
         start_positions = [int(v[1]) for v in values]
@@ -308,7 +314,7 @@ def create_summary_bed(infile,outfile):
         min_start = min(start_positions)
         max_end = max(end_positions)
         count = len(values)
-        if count >= int(config_dict['minimum_depth_bbmap_filter']):  # Only include rows with count >= 3
+        if count >= int(config_dict['minimum_depth_bbmap_filter']):  # Only include rows with count >= set
             summary[key] = (chromosome, min_start, max_end, count)  # Store chromosome, min start, max end, count
 
     # 'summary' = dictionary with keys as (column 4, column 7) tuples and values as summarised events
@@ -336,7 +342,7 @@ def summarise_deletions(infile, outfile):
     df.columns = ['chromosome', 'start', 'end', 'score', 'name', 'count']
     df = df.sort_values(['score', 'count'], ascending=False)
 
-    # Save the sorted dataframe to a new bed file
+    # Save the sorted dataframe
     df.to_csv(f'{outfile}', sep='\t', index=False, header=False)
 
 
