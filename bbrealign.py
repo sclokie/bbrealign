@@ -153,7 +153,14 @@ def sort_bbmap_bam(infile, outfile):
      else:
          os.system(f"> {infile}")
 
+
 @follows(sort_bbmap_bam)
+@transform(["/data/*.bbmap.sorted.bam"],suffix(".bbmap.sorted.bam"),".bbmap.sorted.bam.bai")
+def index_bbmap_sorted(infile,outfile):
+    print(infile,'-->',outfile)
+    os.system(f"samtools index {infile}")
+
+@follows(index_bbmap_sorted)
 @collate("/data/*.bbmap.sorted.bam", formatter("([^/]+).chr([0-9]|[0-9][0-9]|X|Y|MT).bbmap.sorted.bam$"),"{path[0]}/{1[0]}.merged.bbmap.bam")
 def merge_bbmap(infiles,outfile):
     """
