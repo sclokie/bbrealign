@@ -19,4 +19,4 @@ bwa2_genome_dict=/data/genomic-resources/human/gatk_bundle/hs37d5/bwa-mem2/hs37d
 bbmap_genome=/genomes/human_g1k_v37_decoy_cleaned_header.fasta
 #genome_contig_sizes=/genomes/genome_sizes.txt
 
-minimum_depth_bbmap_filter=3
+minimum_depth_bbmap_filter=5
