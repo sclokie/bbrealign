@@ -13,6 +13,7 @@ from ruffus import *
 import matplotlib.pyplot as plt
 import pandas as pd
 import time
+from collections import Counter
 from Bio import SeqIO
 
 #from utilities import filter_sam, update_cigar_distribution, filter_bam_file
@@ -80,8 +81,8 @@ def readConfigFile(config_file):
 readConfigFile(args.config_file)
 cur_dir = os.getcwd()
 
-@jobs_limit(12)
-@transform(["/data/*.split.bam"],suffix(".split.bam"),".splitreads.bam")
+#@jobs_limit(12)
+#@transform(["/data/*.split.bam"],suffix(".split.bam"),".splitreads.bam")
 def extract_split_reads(infile,outfile):
    print(infile,'-->',outfile)
    name = re.sub(".split.bam","",infile)
@@ -93,17 +94,17 @@ def extract_split_reads(infile,outfile):
                -o {outfile} \
                -t {os.getcwd()}")
 
-@follows(extract_split_reads)
-@subdivide(["/data/*splitreads.bam"],formatter(r".splitreads.bam$"),"/data/{basename[0]}.fastq.gz")
+#@follows(extract_split_reads)
+#@subdivide(["/data/*splitreads.bam"],formatter(r".splitreads.bam$"),"/data/{basename[0]}.fastq.gz")
 def splitreads_to_fastq(infile,outfile):
     print(infile,'-->',outfile)
     cmd = f"samtools fastq -o {outfile} -0 /dev/null {infile}"
     os.system(cmd)
 
 splitreadsregex = "(?P<FILESTRING>.+).splitreads.R[12].fastq.gz$"
-@jobs_limit(4)
-@follows(splitreads_to_fastq)
-@transform("/data/*.splitreads.fastq.gz", suffix(".splitreads.fastq.gz"),".bbmap.bam")
+#@jobs_limit(4)
+#@follows(splitreads_to_fastq)
+#@transform("/data/*.splitreads.fastq.gz", suffix(".splitreads.fastq.gz"),".bbmap.bam")
 def bbmap_split_reads(infile,outfile):
     name = re.sub(".bbmap.bam","",outfile)
     os.system(f"bbmap.sh \
@@ -114,6 +115,7 @@ def bbmap_split_reads(infile,outfile):
            rgpl=illumina \
            rgsm={name} \
            in={infile} \
+           out={outfile} \
            out={outfile} \
            outu={name}.bbmap.unmapped.fastq \
            unpigz=t \
@@ -135,9 +137,9 @@ def bbmap_split_reads(infile,outfile):
            statsfile={name}.bbmap.align.stats.log \
            machineout=t")
 
-@jobs_limit(4)
-@follows(bbmap_split_reads)
-@transform(["/data/*.bbmap.bam"], suffix(".bbmap.bam"), ".bbmap.sorted.bam")
+#@jobs_limit(4)
+#@follows(bbmap_split_reads)
+#@transform(["/data/*.bbmap.bam"], suffix(".bbmap.bam"), ".bbmap.sorted.bam")
 def sort_bbmap_bam(infile, outfile):
      print(infile, '-->', outfile)
      """
@@ -146,7 +148,7 @@ def sort_bbmap_bam(infile, outfile):
      """
      #temp_dir=os.getcwd()
      temp_dir=os.getcwd()
-     os.system(f"./sambamba-0.8.2-linux-amd64-static sort -m 4G -t {config_dict['sambamba_sort_threads']} --tmpdir {temp_dir} -o {outfile} {infile} &> {outfile}.sambamba-coordinate-sort.log")
+     os.system(f"./sambamba-0.8.2-linux-amd64-static sort -m 8G -t {config_dict['sambamba_sort_threads']} --tmpdir {temp_dir} -o {outfile} {infile} &> {outfile}.sambamba-coordinate-sort.log")
      time.sleep(2)
      if config_dict['debugmode'] == 'T':
          pass
@@ -154,14 +156,14 @@ def sort_bbmap_bam(infile, outfile):
          os.system(f"> {infile}")
 
 
-@follows(sort_bbmap_bam)
-@transform(["/data/*.bbmap.sorted.bam"],suffix(".bbmap.sorted.bam"),".bbmap.sorted.bam.bai")
+#@follows(sort_bbmap_bam)
+#@transform(["/data/*.bbmap.sorted.bam"],suffix(".bbmap.sorted.bam"),".bbmap.sorted.bam.bai")
 def index_bbmap_sorted(infile,outfile):
     print(infile,'-->',outfile)
     os.system(f"samtools index {infile}")
 
-@follows(index_bbmap_sorted)
-@collate("/data/*.bbmap.sorted.bam", formatter("([^/]+).chr([0-9]|[0-9][0-9]|X|Y|MT).bbmap.sorted.bam$"),"{path[0]}/{1[0]}.merged.bbmap.bam")
+#@follows(index_bbmap_sorted)
+#@collate("/data/*.bbmap.sorted.bam", formatter("([^/]+).chr([0-9]|[0-9][0-9]|X|Y|MT).bbmap.sorted.bam$"),"{path[0]}/{1[0]}.merged.bbmap.bam")
 def merge_bbmap(infiles,outfile):
     """
     Sort the chromosomes in proper order so increase speed.
@@ -187,13 +189,13 @@ def merge_bbmap(infiles,outfile):
             CREATE_INDEX=true 2>{log_name}.merge.log"
 
     os.system(cmd)
-@follows(merge_bbmap)
-@transform(["/data/*.merged.bbmap.bam"],suffix(".merged.bbmap.bam"),".merged.bbmap.bam.bai")
+#@follows(merge_bbmap)
+#@transform(["/data/*.merged.bbmap.bam"],suffix(".merged.bbmap.bam"),".merged.bbmap.bam.bai")
 def index_merged_bbmap(infile,outfile):
     print(infile,'-->',outfile)
     os.system(f"samtools index {infile}")
-@follows(index_merged_bbmap)
-@transform(["/data/*.merged.bbmap.bam"],suffix(".merged.bbmap.bam"),".merged.bbmap.cigar.filtered.bam")
+#@follows(index_merged_bbmap)
+#@transform(["/data/*.merged.bbmap.bam"],suffix(".merged.bbmap.bam"),".merged.bbmap.cigar.filtered.bam")
 def filter_bbmap_on_cigar(infile,outfile):
     outfile_temp = f"{outfile}.temp"
     filter_bam_file(infile,outfile_temp)
@@ -201,8 +203,8 @@ def filter_bbmap_on_cigar(infile,outfile):
     os.system(f"samtools index {outfile}")
     os.system(f"rm {outfile_temp}")
 
-@follows(filter_bbmap_on_cigar)
-@transform(["/data/*.merged.bbmap.cigar.filtered.bam"],suffix(".merged.bbmap.cigar.filtered.bam"),".bbmap.roi.bed")
+#@follows(filter_bbmap_on_cigar)
+#@transform(["/data/*.merged.bbmap.cigar.filtered.bam"],suffix(".merged.bbmap.cigar.filtered.bam"),".bbmap.roi.bed")
 def calculate_depth(infile,outfile):
     # create genome file using a custom function that summarises a given fasta on the fly -
     # that is the same one used by bbmap in this case
@@ -217,22 +219,22 @@ def calculate_depth(infile,outfile):
     | bedtools slop -i - -g /data/genome_sizes_contigs.txt -b 300 > {outfile}"
     os.system(cmd)
 
-@follows(calculate_depth)
-@transform(["/data/*.bbmap.roi.bed"], suffix(".bbmap.roi.bed"), ".bbmap.roi.bam")
+#@follows(calculate_depth)
+#@transform(["/data/*.bbmap.roi.bed"], suffix(".bbmap.roi.bed"), ".bbmap.roi.bam")
 def filter_bbmap_bam_for_roi(infile, outfile):
     # filter bam
     bam_name = re.sub(".bbmap.roi.bed",".merged.bbmap.cigar.filtered.bam",infile)
     filter_cmd = f"intersectBed -wa -a {bam_name} -b {infile} > {outfile}"
     os.system(filter_cmd)
 
-@follows(filter_bbmap_bam_for_roi)
-@transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bbmap.roi.bam.bai")
+#@follows(filter_bbmap_bam_for_roi)
+#@transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bbmap.roi.bam.bai")
 def index_filtered_bbmap(infile,outfile):
     print(infile,'-->',outfile)
     os.system(f"./sambamba-0.8.2-linux-amd64-static index -t {int(config_dict['sambamba_sort_threads'])} {infile}")
 
-@follows(index_filtered_bbmap)
-@transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bbmap_realigned.roi.bed")
+#@follows(index_filtered_bbmap)
+#@transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bbmap_realigned.roi.bed")
 def calculate_depth_for_bbmap_realigned(infile,outfile):
     #create genome file using a custom function that summarises a given fasta on the fly -
     # that is the same one used by bbmap in this case
@@ -245,9 +247,11 @@ def calculate_depth_for_bbmap_realigned(infile,outfile):
     | bedtools slop -i - -g /data/genome_sizes_contigs.txt -b 300 > {outfile}"
     os.system(cmd)
 
-@follows(calculate_depth_for_bbmap_realigned)
-@transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".annotated.bed")
-def create_annotated_bed(infile,outfile):
+#@follows(calculate_depth_for_bbmap_realigned)
+
+#@transform(["/data/*.bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bam_merged.bed")
+@transform(["/data/*bbmap.roi.bam"],suffix(".bbmap.roi.bam"),".bam_merged.bed")
+def create_bam_merged_bed(infile,outfile):
     """
     A function that:
     (1) downloads genes from ucsc and removes 'chr'
@@ -258,24 +262,137 @@ def create_annotated_bed(infile,outfile):
     """
     print(infile,'-->',outfile)
     # download a list of genes, remove header and merge
-    os.system(f"mysql \
-                 --user=genome \
-                 --host=genome-mysql.soe.ucsc.edu \
-                 -A -e \"select chrom, txStart, txEnd, name2 from hg19.refGene\" \
-                 | sed \'1d\' \
-                 | bedtools sort -i - \
-                 | bedtools merge -c 4 -o distinct | sed 's/chr//' > hg19.genes.bed")
-    os.system('mv hg19.genes.bed /data/hg19.genes.bed')
+    # os.system(f"mysql \
+    #              --user=genome \
+    #              --host=genome-mysql.soe.ucsc.edu \
+    #              -A -e \"select chrom, txStart, txEnd, name2 from hg19.refGene\" \
+    #              | sed \'1d\' \
+    #              | bedtools sort -i - \
+    #              | bedtools merge -c 4 -o distinct | sed 's/chr//' > hg19.genes.bed")
+    # os.system('mv hg19.genes.bed /data/hg19.genes.bed')
     #merge_and_count_deletions(infile,outfile)
     command = f"""bedtools bamtobed -cigar -tag NM -i {infile} \
-                    | bedtools merge -c 5,5,7 -o max,count,last \
-                    | intersectBed -loj -a stdin -b /data/hg19.genes.bed \
-                    | awk '{{OFS="\\t"}} {{printf "%s\\t%s\\t%s\\t%.0f\\t%s\\t%s\\t%s\\n", $1, $2, $3, $4, $5, $10, $6}}' \
-                    > {outfile}"""
+                  | bedtools merge -c 5,5,7,2,3 -o max,count,collapse,collapse,collapse \
+                  > {outfile}"""
 
     subprocess.run(command, shell=True, check=True)
 
-@follows(create_annotated_bed)
+@follows(create_bam_merged_bed)
+@transform(["/data/*.bam_merged.bed"],suffix(".bam_merged.bed"),".summarised.merged.bed")
+def summarise_merged_bed(infile,outfile):
+    """
+    input:
+    bam
+
+    output:
+    chr   start   stop   length    depth    cigar(s)
+    """
+    print(infile,'-->', outfile)
+
+    with open(f'{infile}', 'r') as f:
+        with open(f'{outfile}', 'w') as outfile:
+            count = 0
+            for line in f:
+
+                fields = line.strip().split("\t")  # strip() removes newline characters at the end of lines
+                #print(fields)
+                chrom = fields[0]
+                start = fields[1]
+                end = fields[2]
+                del_len = int(fields[3])
+                depth = int(fields[4])
+                genes = fields[5]
+                cigar = fields[5]
+                starts = fields[6].split(',')
+                ends = fields[7].split(',')
+
+                cigar_list = []
+                cigar_list = cigar.split(',')
+
+                #print(len(cigar_list),cigar_list)
+                # Create a frequency table (like 'sort | uniq -c') in bash.
+                # Add the list of cigar operations to a counter (which was one per line)
+                # Iterate over the contents of the counter to determine the CIGAR containing
+                # the highest abundance DEL event
+                # cigar_counter = Counter(cigar_list)
+                # start_counter = Counter(starts)
+                # end_counter = Counter(ends)
+                count += 1
+                dels = []
+                del_dict = {}
+
+                # iterate though column 6 (the list of cigar sequences in the merged region
+                # from the previous function (bedtools merge). Keep an iteration count.
+                for pos,i in enumerate(cigar_list):
+                    #print('line:',count,pos,i)
+                    cigar_ops = re.findall(r'(\d+)([MIDNSHP=X])', i)
+                    dist_to_cigar_operation = 0   # keep a note of dist to cigar operation
+                    for length, operation in cigar_ops:
+                        length = int(length)
+                        if operation == '=':  # Match operation
+                            dist_to_cigar_operation += length
+                        elif operation == 'D':
+                            #print('length:',length, operation)
+                            dels.append(length)
+
+                            # use the position within the iteration of the list to slice out the correct start and add
+                            # it to the distance to the D. for the end, then add the length of the event as well.
+                            corrected_start = int(starts[pos]) + dist_to_cigar_operation
+                            corrected_end = int(starts[pos]) + dist_to_cigar_operation + length
+
+                            # create dict to hold the above values, using event length as key:
+                            del_dict[length] = [corrected_start,corrected_end]
+
+                            # choose the event to be used in the final bed
+
+                # establish a counter to summarise frequency of dels (i.e. how many times we see them in a list).
+                counts = Counter(dels)
+
+                # establish the maximum count for the deletion in order to report it
+                # (this is a design choice).
+                # When we have decided the event to report, then we can use the previously
+                # created dictionary to extract the correct coordinates, in order to have
+                # a bed file that starts and stops at the exact event.
+                deletion_summary = []
+
+                for item, count in counts.items():
+                    results = tuple((item,count))
+                    deletion_summary.append(results)
+
+                # determine max value:
+                max_tuple = max(deletion_summary, default=0, key=lambda item: item[1])
+                event_length = int()
+                read_depth = int()
+
+                # record max value, creating proper null values for empty lists (i.e. lines with no deletions in them)
+                if isinstance(max_tuple, int):
+                    continue
+                else:
+                    event_length = max_tuple[0]
+                    read_depth = max_tuple[1]
+
+                # Filter those containing the desired substring
+                cigar_report = ','.join([cig for cig in cigar_list if str(event_length) in cig])
+                corrected_bed = f'{chrom}\t{del_dict[event_length][0]}\t{del_dict[event_length][1]}\t{event_length}\t{read_depth}\t{cigar_report}\n'
+                outfile.write(corrected_bed)
+
+@follows(summarise_merged_bed)
+@transform(["/data/*.summarised.merged.bed"],suffix(".summarised.merged.bed"),".annotated.bed")
+def annotate_bed(infile,outfile):
+    """
+
+    input:
+    chr   start   stop   length   depth   cigar(s)
+
+    output:
+    chr   start   stop   length    depth    dups_removed_genes   cigar(s):
+
+    """
+    os.system(f"intersectBed -loj -a {infile} -b /data/hg19.genes.bed \
+                | awk '{{OFS=\"\\t\"}} {{printf \"%s\\t%s\\t%s\\t%.0f\\t%s\\t%s\\t%s\\n\", $1, $2, $3, $4, $5, $10, $6}}' \
+                > {outfile}")
+
+@follows(annotate_bed)
 @transform(["/data/*.annotated.bed"],suffix(".annotated.bed"),".annotated.summary.bed")
 def create_summary_bed(infile,outfile):
     """
@@ -294,7 +411,7 @@ def create_summary_bed(infile,outfile):
                 del_len = int(fields[3])
                 depth = int(fields[4])
                 genes = fields[5]
-                cigar = fields[6]
+                cigar = fields[6].split(',')[0]
 
                 # If there are no gene matches ('.'), replace it with a short name, just so I have something in there.
                 if genes == '.':
@@ -339,8 +456,8 @@ def summarise_deletions(infile, outfile):
     df.to_csv(f'{outfile}', sep='\t', index=False, header=False)
 
 
-@follows(summarise_deletions)
-@transform(["/data/*annotated.bed"], suffix("annotated.bed"), "distribution.png")
+#@follows(summarise_deletions)
+#@transform(["/data/*annotated.bed"], suffix("annotated.bed"), "distribution.png")
 def plot_distributions(infile,outfile):
 
     # Read the BED file and extract deletion sizes
